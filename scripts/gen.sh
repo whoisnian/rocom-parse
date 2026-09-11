@@ -66,7 +66,10 @@ py() { uv run --project "$REPO" python "$SCRIPT_DIR/$1" "${@:2}"; }
 
 if [[ $do_unpack -eq 1 ]]; then
     echo "==> unpack(增量)"
-    "$SCRIPT_DIR/unpack.sh" --out "$parsed"
+    # rc 2 = 个别条目导出失败(如无像素数据的 RenderTarget),照常生成;其余非 0 中止
+    rc=0
+    "$SCRIPT_DIR/unpack.sh" --out "$parsed" || rc=$?
+    [[ $rc -eq 0 || $rc -eq 2 ]] || exit $rc
 fi
 echo "==> gen_gamedata($profile)→ $gamedata/names.json"
 py gen_gamedata.py
