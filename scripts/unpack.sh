@@ -24,7 +24,7 @@
 # AES 主密钥默认用下方 DEFAULT_AES(与 Windows FModel AppSettings.json → AesKeys 同一把,
 # 换密钥的版本传 --aes 覆盖)。
 # 依赖:dotnet SDK 10+(pacman -S dotnet-sdk);CUE4Parse 克隆(默认 ~/Git/CUE4Parse,
-# 环境变量 CUE4PARSE_DIR 覆盖;当前游戏版本的 pak 需带 ver12 解密支持的克隆,见 docs/data.md);
+# 环境变量 CUE4PARSE_DIR 覆盖;须是 whoisnian/CUE4Parse 的 rocom 分支,见 docs/data.md);
 # 首次运行会往 ~/.cache/nrc-unpack 下载 oodle/zlib-ng 原生库。
 #
 set -euo pipefail
@@ -43,12 +43,12 @@ CUE4PARSE_DIR="${CUE4PARSE_DIR:-$HOME/Git/CUE4Parse}"
     echo "  克隆一份,或设环境变量 CUE4PARSE_DIR 指向已有克隆" >&2
     exit 1
 }
-# 当前游戏版本(ver12 pak)的解密支持还没进上游主线(解不开时只打一行告警就整包跳过,
-# 不报错),故这里认一个带该支持的克隆才有的文件,免得导出「零失败但零内容」:
-# whoisnian/CUE4Parse 的 rocom 分支(= 上游 + PR #430 + 自有修复,见 docs/reference.md)。
-# 合入上游主线后可去掉本段。
-[[ -f "$CUE4PARSE_DIR/CUE4Parse/GameTypes/Tencent/RocoKingdomWorld/Encryption/NRCPakFileReader.cs" ]] || {
-    echo "错误: $CUE4PARSE_DIR 解不开当前版本的 pak,需要带 ver12 解密支持的 CUE4Parse 克隆(rocom 分支)" >&2
+# 上游主线已合入 ver12 解密(PR #430),但压缩块解密与 ver11 策略位的修复还只在
+# whoisnian/CUE4Parse 的 rocom 分支(= 上游 master + 自有修复,见 docs/reference.md);
+# 缺了它们,多块 MLE 加密条目(all.pb、proto.non、UI 图集等)全部解压失败。这里认一个只有
+# 该分支才有的标识符。修复合入上游主线后可去掉本段。
+grep -q HasEncryptionStrategy "$CUE4PARSE_DIR/CUE4Parse/UE4/Pak/Objects/FPakInfo.cs" 2>/dev/null || {
+    echo "错误: $CUE4PARSE_DIR 缺少 rocom 分支的 pak 修复,需要 whoisnian/CUE4Parse 的 rocom 分支" >&2
     exit 1
 }
 export CUE4PARSE_DIR

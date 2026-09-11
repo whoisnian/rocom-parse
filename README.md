@@ -18,8 +18,8 @@
 ## 依赖
 
 - dotnet SDK 10+(Arch: `pacman -S dotnet-sdk`)与 CUE4Parse 克隆(默认 `~/Git/CUE4Parse`,
-  环境变量 `CUE4PARSE_DIR` 覆盖):要 `whoisnian/CUE4Parse` 的 **`rocom` 分支**,上游主线解不开
-  当前版本的 pak,见 [docs/reference.md](docs/reference.md)。
+  环境变量 `CUE4PARSE_DIR` 覆盖):要 `whoisnian/CUE4Parse` 的 **`rocom` 分支**,上游主线虽已
+  支持当前版本的 pak,但仍缺若干修复,见 [docs/reference.md](docs/reference.md)。
 - [uv](https://docs.astral.sh/uv/)(Python 脚本依赖,项目内 `.venv`,勿用系统 pip)。
 - Go 1.26+、protoc + protoc-gen-go(`gen_proto.py`)。
 - 可选:unluac(`.luac` 反编译)、tcpdump(`capture.sh`)。

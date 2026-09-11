@@ -46,11 +46,11 @@
 > 兜住 unluac 对个别字节码的死循环,失败/超时打 `.lua.nodecomp` 标记、增量重跑跳过不再白耗;
 > 空模块(源仅注释/空)合法解出空 `.lua`。
 > C# 实现在 `scripts/unpack/`,基于 CUE4Parse 的 `GAME_RocoKingdomWorld` 支持(自定义
-> AES 字节置换变体、Bin/luac 专属处理,无需 usmap)。当前游戏版本的 pak(ver12)**上游主线
-> 还解不开**,要用带该支持的克隆(默认位置 `~/Git/CUE4Parse`,`CUE4PARSE_DIR` 覆盖;unpack.sh 会检查):
-> 自己 fork 的 `whoisnian/CUE4Parse` **`rocom` 分支** = 上游 master + 上游 PR
-> [#430](https://github.com/FabianFG/CUE4Parse/pull/430)(LukeFZ `nrc`)+ 自有修复(见 docs/reference.md)。
-> 合入上游主线后换回主线即可。
+> AES 字节置换变体、Bin/luac 专属处理,无需 usmap)。当前游戏版本 pak(ver12)的解密已随上游
+> PR [#430](https://github.com/FabianFG/CUE4Parse/pull/430)(LukeFZ `nrc`)进主线,但**主线仍解不全**:
+> 多块压缩的加密条目(`all.pb`、`proto.non`、UI 图集等)解压失败,旧版 ver11 pak 的大条目块数被截。
+> 要用自己 fork 的 `whoisnian/CUE4Parse` **`rocom` 分支** = 上游 master + 自有修复(见 docs/reference.md;
+> 默认位置 `~/Git/CUE4Parse`,`CUE4PARSE_DIR` 覆盖;unpack.sh 会检查)。修复合入上游主线后换回主线即可。
 > 依赖 dotnet-sdk 10+;首次运行自动下载 oodle/zlib-ng 到
 > `~/.cache/nrc-unpack`。AES 主密钥默认值已内置在 `unpack.sh`(`DEFAULT_AES`,换密钥的版本用
 > `--aes <hex>`/`@文件` 覆盖;与 Windows FModel `AppSettings.json → AesKeys` 同一把,该游戏
