@@ -14,7 +14,7 @@
 #                    --pb-pkg github.com/whoisnian/rocom-capture/internal/pb   # rocom-capture 用法
 # 选项:
 #   --profile capture|minimal  生成哪一档(默认 capture;minimal 只出宠物名称/头像/血脉/炫彩/标记)
-#   --out <dir>              生成物根(默认 build;各子目录默认在其下)
+#   --out <dir>              生成物根(默认本仓库的 build/;各子目录默认在其下)
 #   --gamedata <dir>         names.json + img/ 的目录(默认 <out>/gamedata)
 #   --pbdesc <dir>           pcapdump 描述符目录(默认 <out>/pbdesc;minimal 档默认不出)
 #   --pb <dir> --pb-pkg <p>  protoc 生成 Go 包到 <dir>,import 路径 <p>(默认不出)
@@ -28,7 +28,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(dirname "$SCRIPT_DIR")"
 
 profile=capture
-out=build
+out="$REPO/build"   # 相对本仓库,不随调用方 cwd 变
 gamedata=""
 pbdesc=""
 pb=""
