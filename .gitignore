@@ -1,0 +1,25 @@
+# 生成物(gen.sh 产出,消费方按需生成到自己的目录)
+/build/
+
+# 抓包产物
+/pcap/
+*.pcap
+*.pcap[0-9]*
+
+# Python (scripts venv)
+/.venv/
+__pycache__/
+
+# C# 解包工具(scripts/unpack)构建产物
+/scripts/unpack/bin/
+/scripts/unpack/obj/
+
+# 编译产物
+/pcapdump
+/dist/
+
+# 编辑器 / 系统
+.DS_Store
+*.swp
+.idea/
+.vscode/
