@@ -700,9 +700,14 @@ _flower_ids = {int(k): v["name"] for k, v in _npc_conf.items() if v.get("name") 
 _flower_icon = {}   # npc id -> 图标原名(取自 WORLD_MAP_CONF 里指向该 NPC 的行)
 for w in world_map_all.values():   # 用未过滤的原表:花种行不参与「是否显示」筛选,只借它拿图标
     nid = w.get("npc_conf_id")
-    # 图标引用在本表有两种写法:完整资产路径(world_map_NPCicon_des)与裸文件名
-    # (npcicon_unlock,形如 img_cao_png.img_cao_png),texkey 只认前者,故裸名再兜一次。
-    ref = w.get("world_map_NPCicon_des") or w.get("npcicon_unlock") or ""
+    # 图标引用在本表有两种写法,**两者指的是两张不同的图**,花种要的是前者:
+    #   npcicon_unlock        裸文件名(img_cao_png.img_cao_png)→ WorldMapNpc 图集里的**成品**:
+    #                         血脉花 + 白描边 + 右上角血脉徽章,100×100,与游戏内大地图一致;
+    #   world_map_NPCicon_des 完整资产路径 → BigMapStatic 图集里的**无边剪影**(67×52)。
+    # 客户端大地图按裸名取图,故以 npcicon_unlock 为准(花种 48 行全有,18 个裸名在 WorldMapNpc
+    # 里一一对得上,含 BigMapStatic 没有的 img_shi/img_gedou/img_feixing);缺它才退回完整路径。
+    # texkey 只认完整路径,裸名走 split 取 basename。
+    ref = w.get("npcicon_unlock") or w.get("world_map_NPCicon_des") or ""
     if nid in _flower_ids and ref:
         _flower_icon[nid] = texkey(ref) or ref.split(".")[0]
 # 少数族内行没写 npc_conf_id(WORLD_MAP 900002/900003…),按「族内序号相同即同属性」补齐:

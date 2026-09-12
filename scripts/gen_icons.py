@@ -15,7 +15,7 @@
   - blood:    PET_BLOOD_CONF.icon(24 血脉主图标精灵)                 → img/blood/
   - static:   下方 STATIC 清单(人工挑选的杂项精灵)                   → img/static/
   - worldmap: 下方 WORLDMAP 清单(人工挑选的大地图 POI 精灵)          → img/worldmap/
-  - flower:   稀兽/命定花种的大地图属性花图(WORLD_MAP_CONF 指到花种 NPC 的行) → img/flower/
+  - flower:   稀兽/命定花种的大地图成品图(花+白边+血脉徽章,WorldMapNpc 图集)  → img/flower/
   - medal:    MEDAL_CONF.icon(BagItem 奖牌小图,整张贴图)            → img/medal/
   - egg:      BAG_ITEM_CONF 里 type==8 的精灵蛋 icon(整张贴图)      → img/egg/
   - glass:    炫彩色卡的两张遮罩 + 粒子层 + 隐藏炫彩整卡与标记图     → img/glass/
@@ -71,35 +71,40 @@ WORLDMAP = {
     "owl_worldmap_fruit_A3_png":            "紫色精灵果实",
 }
 
-# flower 组:稀兽花种/命定花种的大地图图标(18 种**血脉**各一张花图,稀兽与命定共用同一批;
+# flower 组:稀兽花种/命定花种的大地图图标(18 种**血脉**各一张,稀兽与命定共用同一批;
 # 花里孕育的是混血精灵,图标画的是它的血脉而非种族属性,见 gen_gamedata.py 的花种段)。
-# 它们在 **BigMapStatic** 图集(与 worldmap 组的 WorldMapNpc 不同),且文件名(img_cao_png、
-# img_huo_png…)与 WorldMapNpc/CommonStatic 里的同名精灵**撞名不同图**,故:
-#   ①不把 BigMapStatic 加进 ATLAS_DIRS(basename 回退会选错图集),只走 WORLD_MAP_CONF 里的
-#     完整资产路径 world_map_NPCicon_des;
-#   ②单独出一组 img/flower/,免得与 img/worldmap/ 的同名 webp 互相覆盖。
+# 取 **WorldMapNpc** 图集里的那一套:血脉花 + 白描边 + 右上角血脉徽章、100×100 的**成品**,
+# 与游戏内大地图一模一样。BigMapStatic 里有一套**同名不同图**的无边剪影(67×52),
+# WORLD_MAP_CONF 的 world_map_NPCicon_des 指的是它 —— 不要用,客户端走的是裸名
+# npcicon_unlock,命中的就是这里的成品图(gen_gamedata.py 的花种段同此判断)。
+# 故:
+#   ①按裸名拼 WorldMapNpc 的完整路径,不靠 basename 回退——XueMai(血脉徽章)图集里也有
+#     img_cao_png 之类的同名精灵,且排在 ATLAS_DIRS 更前面,回退会选错;
+#   ②单独出一组 img/flower/,免得与 img/worldmap/、img/blood/ 的同名 webp 互相覆盖。
 # 花种 NPC 按 NPC_CONF.name 认(与 gen_gamedata.py 的 FLOWER_KINDS 同一判据)。
 FLOWER_KINDS = ("稀兽花种", "命定花种")
+FLOWER_ATLAS = "/Game/NewRoco/Modules/System/BigMap/Raw/Atlas/WorldMapNpc/Frames/"
 
 
-# 图层图例用的通用花种图标(不属于任何属性),与属性花图同图集。
+# 图层图例用的通用花种图标(不属于任何血脉):只有 BigMapStatic 那套里有。
 FLOWER_GENERIC = "/Game/NewRoco/Modules/System/BigMap/Raw/Atlas/BigMapStatic/Frames/img_icon_huazhong_png"
 
 
 def flower_icon_refs():
-    """花种大地图图标的完整资产引用(/Game/…/BigMapStatic/Frames/img_<属性>_png)+ 通用图例图。
+    """花种大地图图标的完整资产引用(/Game/…/WorldMapNpc/Frames/img_<血脉>_png)+ 通用图例图。
 
-    图标引用取 world_map_NPCicon_des(完整路径)而非 npcicon_unlock(裸文件名):后者有三行
-    (石/格斗/飞行系)写着解包树里根本不存在的资产名,前者才是现行的 img_yan/img_wu/img_yi。
+    图标名取 npcicon_unlock 的裸名(img_cao_png.img_cao_png → img_cao_png),再拼成
+    WorldMapNpc 的完整路径:那里的同名精灵才是成品图(见上方 flower 组说明);
+    BigMapStatic 里的同名剪影与 XueMai 里的同名血脉徽章都不是要的图。
     """
     yield FLOWER_GENERIC
     flowers = {int(k) for k, r in load_rows("NPC_CONF").items() if r.get("name") in FLOWER_KINDS}
     for r in load_rows("WORLD_MAP_CONF").values():
         if r.get("npc_conf_id") not in flowers:
             continue
-        m = re.search(r"/Game/[^']+", str(r.get("world_map_NPCicon_des") or ""))
-        if m:
-            yield m.group(0)
+        bare = str(r.get("npcicon_unlock") or "").split(".")[0]
+        if bare:
+            yield FLOWER_ATLAS + bare
 
 
 # glass 组:炫彩色卡(见 docs/data.md 的炫彩段与客户端 UMG_Pet_DazzlingTips_C)。
