@@ -156,7 +156,7 @@ foreach (var candidate in provider.Files.Values)
     var ext = Path.GetExtension(rel).ToLowerInvariant();
     // --raw:包也按原始字节导,.uexp/.ubulk 各自成文件。用来看 CUE4Parse **不解**的那些段
     // ——比如材质 cooked resource 里的 shader map SHA1(属性表里没有,要拿原始字节去
-    // shader library 的 ShaderMapHashes 里比对,见 scripts/shaderdump.py)。
+    // shader library 的 ShaderMapHashes 里比对,见 rocom-pets 的 scripts/shaderdump.py)。
     if (!rawOnly && ext is ".uexp" or ".ubulk" or ".uptnl") continue; // 随 .uasset 包体自动读取
     if (!seen.Add(candidate.Path)) continue;
     var file = provider.Files[candidate.Path];
