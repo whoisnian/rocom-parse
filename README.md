@@ -12,8 +12,10 @@
 - **Go 包**:`gcp`(tsf4g/GCP 分帧、会话密钥、AES 解密)、`capture`(TCP 重组 + pcap 回放)、
   `pbdesc`(opcode → 消息类型的运行时反射),`github.com/whoisnian/rocom-parse` 供 rocom-capture import。
 
-> 只服务于作者本人的玩具项目:只考虑自己的本地环境,凡是与此无关的事一律不做。
-> 人工输出只有提示词,代码与文档均为 AI 生成;建议把 `docs/` 喂给 AI 做参考。
+> **这是个只服务于作者本人的玩具项目**，主要用来服务 [rocom-capture](https://github.com/whoisnian/rocom-capture)  
+> 只考虑自己的本地环境和自己的开发需求，凡是与此无关的事情一律不做。
+>
+> 本仓库的代码与文档全部由 AI 生成，不适合人工阅读，只建议喂给 AI 做参考。
 
 ## 依赖
 
