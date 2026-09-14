@@ -777,7 +777,12 @@ def _egg_tables():
                  GetPetConf(petId).name 填 known_name),血脉只留在 egg_conf.n 里当「孵出谁」。
     - egg_types: EGG_TYPE_CONF 的 precious_egg_type -> {n:品类名(异色精灵蛋…), o:display_order
                  (游戏内品质排序的首要键,越小越靠前), img:小图标原名(egg/<原名>.webp)}
-    - nest_furniture: {家具 config_id: 家具名},即家园里能住宠物的小窝(实测仅 1001071 精灵小窝)。
+    - nest_furniture: {家具 config_id: {n:家具名, academy:true(仅学院小窝)}},即家园里能住宠物的小窝
+                 (FURNITURE_ITEM_CONF.interact_type==3;当前 1001071 精灵小窝、1001072 学院小窝)。
+                 学院小窝是精灵学分院的特权家具,与之配对产的蛋**必定继承窝里那只的性格**(玩家实测,
+                 见 rocom-capture docs/eggs.md);哪件家具是它由 ACADEMY_PRIVILEGE_CONF 给出
+                 (academy_id==AID_PET 且 academy_privilege_type==ACADEMY_PRIV_ADD_HOME_PETBED 的
+                 privilege_para1,同客户端 AcademicPrivilegeModuleData:IsPetAcademyHomePetBed)。
     """
     econf, eitems, etypes, nests = {}, {}, {}, {}
     # 重建物种名用:conf_id → pet_info_id → blood_id → 血脉全名(「光系血脉」/「首领血脉」)。
@@ -825,9 +830,18 @@ def _egg_tables():
         if texkey(v.get("small_icon") or v.get("icon")):
             t["img"] = texkey(v.get("small_icon") or v.get("icon"))
         etypes[str(v.get("precious_egg_type", 0))] = t
+    aid_pet = pbdesc.enum(_FDS, "AcademyType")["AID_PET"]
+    priv_petbed = pbdesc.enum(_FDS, "AcademyPrivType")["ACADEMY_PRIV_ADD_HOME_PETBED"]
+    academy_beds = {str(v.get("privilege_para1")) for v in rows("ACADEMY_PRIVILEGE_CONF.json").values()
+                    if v.get("academy_id") == aid_pet and v.get("academy_privilege_type") == priv_petbed}
     for k, v in rows("FURNITURE_ITEM_CONF.json").items():
         if v.get("interact_type") == NEST_INTERACT_TYPE:
-            nests[k] = v.get("name", "")
+            nests[k] = {"n": v.get("name", "")}
+            if k in academy_beds:
+                nests[k]["academy"] = True
+    if missing := academy_beds - set(nests):
+        print(f"!! ACADEMY_PRIVILEGE_CONF 指的学院小窝 {sorted(missing)} 不在 FURNITURE_ITEM_CONF 的小窝里"
+              f"(interact_type!={NEST_INTERACT_TYPE}),需核对", file=sys.stderr)
     return econf, eitems, etypes, nests
 
 
