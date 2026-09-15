@@ -47,8 +47,9 @@
 > 空模块(源仅注释/空)合法解出空 `.lua`。
 > C# 实现在 `scripts/unpack/`,基于 CUE4Parse 的 `GAME_RocoKingdomWorld` 支持(自定义
 > AES 字节置换变体、Bin/luac 专属处理,无需 usmap)。当前游戏版本 pak(ver12)的解密已随上游
-> PR [#430](https://github.com/FabianFG/CUE4Parse/pull/430)(LukeFZ `nrc`)进主线,但**主线仍解不全**:
-> 多块压缩的加密条目(`all.pb`、`proto.non`、UI 图集等)解压失败,旧版 ver11 pak 的大条目块数被截。
+> PR [#430](https://github.com/FabianFG/CUE4Parse/pull/430)(LukeFZ `nrc`)进主线,多块压缩加密条目
+> (`all.pb`、`proto.non`、UI 图集等)的解压也已随 [#434](https://github.com/FabianFG/CUE4Parse/pull/434)
+> 修好,但**主线仍解不全**:旧版 ver11 pak 的大条目块数被截。
 > 要用自己 fork 的 `whoisnian/CUE4Parse` **`rocom` 分支** = 上游 master + 自有修复(见 docs/reference.md;
 > 默认位置 `~/Git/CUE4Parse`,`CUE4PARSE_DIR` 覆盖;unpack.sh 会检查)。修复合入上游主线后换回主线即可。
 > 依赖 dotnet-sdk 10+;首次运行自动下载 oodle/zlib-ng 到

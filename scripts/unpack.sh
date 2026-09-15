@@ -43,10 +43,10 @@ CUE4PARSE_DIR="${CUE4PARSE_DIR:-$HOME/Git/CUE4Parse}"
     echo "  克隆一份,或设环境变量 CUE4PARSE_DIR 指向已有克隆" >&2
     exit 1
 }
-# 上游主线已合入 ver12 解密(PR #430),但压缩块解密与 ver11 策略位的修复还只在
+# 上游主线已合入 ver12 解密(PR #430)与压缩块解密(PR #434),但 ver11 策略位的修复还只在
 # whoisnian/CUE4Parse 的 rocom 分支(= 上游 master + 自有修复,见 docs/reference.md);
-# 缺了它们,多块 MLE 加密条目(all.pb、proto.non、UI 图集等)全部解压失败。这里认一个只有
-# 该分支才有的标识符。修复合入上游主线后可去掉本段。
+# 缺了它,旧版 ver11 pak 中 ≥1024 块的大条目损坏。这里认一个只有该分支才有的标识符。
+# 修复合入上游主线后可去掉本段。
 grep -q HasEncryptionStrategy "$CUE4PARSE_DIR/CUE4Parse/UE4/Pak/Objects/FPakInfo.cs" 2>/dev/null || {
     echo "错误: $CUE4PARSE_DIR 缺少 rocom 分支的 pak 修复,需要 whoisnian/CUE4Parse 的 rocom 分支" >&2
     exit 1
