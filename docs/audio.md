@@ -177,7 +177,7 @@ ffmpeg -i out.wav -ac 1 -ar 48000 -c:a aac -b:a 48k -movflags +faststart out.m4a
 批量转码时务必给 `subprocess.run` 加 `check=True`——wem 缺失会让 vgmstream 静默返回空,
 下游生成出**零长度音频**且无任何报错。
 
-## 9. 嗓音音调:运行时变调,不在音频文件里
+## 9. 嗓音音调:运行时变调,不在音频文件里 —— 而且是三段叠的
 
 导出的 wem 都是**中性音调**。游戏里每只宠物的叫声音高不同,是运行时由 Wwise RTPC 实时变调的,
 音频文件本身只有一份。
@@ -204,24 +204,48 @@ _G.NRCAudioManager:SetEmitterRTPC("Pet_Vo_Pitch", voice, ownerView)
 
 `Init.bnk` 的 STMG 段登记了这个 Game Parameter(FNV-1 = `0xC339B8F5`,默认值 0)。
 
+### 同一个参数挂在三处(2026-09-17 更正)
+
+本节原来只认容器上的那条曲线,把 FX 对象上的命中当成「复刻不了的插件私有参数」排除了。
+实机听感是**只变调、时长不变**,回头用 CUE4Parse 的 Wwise 解析器(`WwiseReader`,自带
+`EAkPluginId` 插件 id 表与各效果器的参数布局)把 638 个 `Pet_Vo_*.bnk` 整个解开,
+`Pet_Vo_Pitch` 在一只的链路上**挂了三条曲线**,信号按序过:
+
+| 段 | 宿主 | ParameterID | 最常见取值(x = −100 / +100) | 性质 |
+| --- | --- | --- | --- | --- |
+| ① 容器 Pitch | 这只的 ActorMixer(type=7) | 2 | −300 / +300(273 只)、−300 / +500(193 只) | 重采样,变调**带**变速 |
+| ② Wwise Pitch Shifter | 父 Mixer `767415373` FX 链第 1 个 FxShareSet(type=16),插件 `0x00880003` | 6(Pitch,音分) | −300 / +49.5 | 延迟线式,变调**不**变速 |
+| ③ Wwise Time Stretch | 同一链第 2 个,插件 `0x00820003` | 1(Time Stretch,%) | 85 / 120 | 变速**不**变调 |
+
+父 Mixer 全库共用(`bOverrideParentFX = 1`,三个 FxShareSet),约 70 只自己另配一套
+(如喵喵:变调器 −500 / 0、伸缩 85% / 110%);Wwise 效果器沿层级**继承**,取最近一层写了覆盖的。
+链第 0 个也是一个 Time Stretch,挂的是**另一个** Game Parameter(`2511284299`,STMG 默认 100 → 100%),
+平时空转。
+
+85 / 120 正是 ±300 音分重采样的倒数(2^(−¼) = 0.841、2^¼ = 1.189):美术手调出来把①拖(缩)的
+时长拉回去的。净效果:**粗嗓门 −600 音分、时长 ×1.01;婉转声 +350(或 +550)音分、时长 ×1.01(或 ×0.90)**。
+只做①是「降 300 且拖长两成」,与实机差得远。
+
+实测复核(rocom-pets 重导后按两端渲染,自相关估 f0):小夜 原声 767 Hz → 粗嗓门 541 Hz(−604 音分)、
+婉转声 1050 Hz(+544);时长 1.914 s → 1.935 s / 1.721 s,与理论 ×1.011 / ×0.899 一致。
+
 ### 曲线在哪、怎么读
 
-每只宠物的 `Pet_Vo_<拼音>.bnk` 都在 **ActorMixer(type=7)** 上挂了该参数的 RTPC 曲线。
-RTPC 条目自参数 id 起的布局(v135 实测):
+容器与 FX 对象上的 RTPC 条目布局一样,自参数 id 起(v135 实测):
 
 | 偏移 | 字段 |
 | --- | --- |
 | +0 | RTPC ID(= `fnv1_32("Pet_Vo_Pitch")`) |
 | +4 | rtpcType |
 | +5 | accum(1=Exclusive / 2=Additive) |
-| +6 | **ParameterID**(2 = Pitch、0 = Volume) |
+| +6 | **ParameterID**(容器:2 = Pitch、0 = Volume;插件:私有下标,见上表) |
 | +7 | curveID(4B) |
 | +11 | scaling |
 | +12 | 点数(**uint16**) |
 | +14 | 点数组,每点 `float x, float y, uint32 interp` |
 
-`interp=4` 为线性。三个点的 x 恒为 -100 / 0 / +100,与游戏内取值域一一对应,
-y 是**音分**(cent)。621 个 bnk 里 619 个有曲线,形态分布:
+`interp=4` 为线性。三个点的 x 恒为 -100 / 0 / +100,与游戏内取值域一一对应。
+①在 621 个 bnk 里 619 个有曲线,分布:
 
 | l / h(音分) | 数量 |
 | --- | --- |
@@ -229,23 +253,28 @@ y 是**音分**(cent)。621 个 bnk 里 619 个有曲线,形态分布:
 | -300 / +500 | 275 |
 | 其它手调特例(如 -801/+1215、-400/+800) | 14 |
 
-同一参数还会命中 FX 插件对象(type=16/17,`0x00820003` / `0x00880003`),
-它们的 ParameterID 是**插件私有下标**、和上表的枚举不是一套(值形如 85→100→120 的百分比型),
-按语义归类前必须先用「宿主对象类型 ∈ 容器」把它们排除掉。
+要找到②③,得从 Sound 沿 NodeBaseParams 的 `directParentID` 往上走。NodeBaseParams 开头就是 FX 块:
+`bOverrideParentFX(1) nFX(1) [bypass(1) (idx(1) fxId(4) isShareSet(1) isRendered(1)) × nFX]`,
+后接 `bOverrideAttachmentParams(1) OverrideBusId(4) directParentID(4)`;Sound 在 NodeBaseParams 前
+还有 14B 源信息。**挂着效果器的节点 `directParentID` 的偏移随 nFX 变**,按固定偏移读会读到效果器 id 上。
+FxShareSet 对象体开头 4 字节是插件 id。
 
 ### 复刻
 
-Wwise 的 pitch 是**重采样**实现(变调同时变速),所以浏览器侧
+三段合成两步。①②都是纯变调,合成**一个播放速率**;「②不带变速」的差额与③合成**一个时长倍率**,
+要一个保音调的时长伸缩(WSOLA / 相位声码器)先把样本伸缩一次:
 
-```js
-audio.preservesPitch = false;           // 默认 true = 保音调时间伸缩,不是我们要的
-audio.playbackRate   = 2 ** (cents / 1200);
+```
+speed   = 2 ** ((cents + shift) / 1200)          // ① + ②
+stretch = 2 ** (shift / 1200) * percent / 100    // 播放前把样本拉到这个倍率
+// 最终时长 = 原时长 / 2^(cents/1200) × percent/100
 ```
 
-即等价实现,无需为每个音调预生成音频。上面那两个 FX 插件复刻不了(bnk 不存插件名字符串),
-两端听感会有音色差异。
+浏览器侧没有现成的保音调伸缩可用于任意倍率(`preservesPitch = true` 只作用于 `playbackRate`,
+拉不到独立的倍率),要么离线预生成两端的音频,要么退回只做①(`preservesPitch = false`,
+`playbackRate = 2 ** (cents/1200)`)—— 那是「降 300 且拖长」的近似。
 
-实际落地见 rocom-pets 导出器的 `Audio.cs`(叫声 ogg + 音调曲线)。
+实际落地见 rocom-pets:导出器 `exporter/Audio.cs`(三段都写进 manifest)、客户端 `src/voice.rs`(WSOLA)。
 
 ## 10. 校验对应关系是否正确
 
