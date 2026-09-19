@@ -5,7 +5,7 @@
 `rocom-parse`:《洛克王国:世界》(进程 `com.tencent.nrc`)的解包 + 生成 + 抓包分析工具箱,
 是 rocom-capture 的数据源与协议层。**本仓库不含任何解包数据或生成物**。
 面向使用者的说明见 [README.md](README.md);设计细节见 `docs/`:
-[数据来源与解析](docs/data.md)、[协议](docs/protocol.md)、[宠物音频](docs/audio.md)、[参考资料](docs/reference.md)。
+[数据来源与解析](docs/data.md)、[进化链](docs/petindex.md)、[协议](docs/protocol.md)、[宠物音频](docs/audio.md)、[参考资料](docs/reference.md)。
 
 ## 数据流
 
@@ -17,8 +17,11 @@
    的 `rocom` 分支;unpack.sh 会检查)。后置步骤:`.bytes` → 紧邻 `.json`(`bin2json.py`)、
    `.luac` → `.lua`(`decompile_luac.sh`,需 unluac)。
 3. `scripts/gen.sh` 跑全部 `gen_*.py`:`gen_gamedata`(names.json)、`gen_images`/`gen_icons`/`gen_bigmap`
-   (webp)、`gen_pbdesc`(pcapdump 描述符)、`gen_proto`(Go 结构体,给了 `--pb` 才出)。输出目录与
-   档位(`--profile capture|minimal`)的约定集中在 `scripts/outdirs.py`,默认落 `build/`(gitignore)。
+   (webp)、`gen_pbdesc`(pcapdump 描述符)、`gen_proto`(Go 结构体,给了 `--pb` 才出)、`petindex`
+   (宠物链清单,给了 `--chains` 才出)。输出目录与档位(`--profile capture|minimal|chains`)的约定集中在
+   `scripts/outdirs.py`,默认落 `build/`(gitignore)。
+   进化链(包/组)只在 `scripts/petindex.py` 算一次,三个消费方(rocom-capture/agent/pets)同一口径,
+   见 [docs/petindex.md](docs/petindex.md);改了规则先跑 `petindex.py --check`。
 
 ## 约定
 

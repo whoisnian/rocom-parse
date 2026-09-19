@@ -6,7 +6,8 @@
   (增量、并行,C# 实现在 `scripts/unpack/`),并自动解码 RocoBinData `.bytes` → `.json`、
   反编译 `.luac` → `.lua`。
 - **生成**:`scripts/gen.sh` 从解包目录产出消费方要的一切——名称表 `names.json`、图标 webp、
-  宠物消息的 Go 结构体、pcapdump 的描述符。**生成物不进仓库**,消费方构建时生成到自己的目录。
+  宠物消息的 Go 结构体、pcapdump 的描述符、宠物链清单 `chains.json`。**生成物不进仓库**,
+  消费方构建时生成到自己的目录。
 - **抓包分析**:`scripts/capture.sh` 在网关上录 pcap;`cmd/pcapdump` 回放并解密,输出结构化文本
   (opcode 概览 / 精确解码转储 / 宠物编号扫描)。
 - **Go 包**:`gcp`(tsf4g/GCP 分帧、会话密钥、AES 解密)、`capture`(TCP 重组 + pcap 回放)、
@@ -38,7 +39,8 @@ rsync -a --delete <游戏Paks目录>/ ~/Downloads/rocom/Paks/
 #    消费方用法(rocom-capture 的 Makefile 就是这么调的):
 ./scripts/gen.sh --gamedata <repo>/internal/gamedata/data \
                  --pb <repo>/internal/pb --pb-pkg github.com/whoisnian/rocom-capture/internal/pb
-./scripts/gen.sh --profile minimal --gamedata <dir>   # 只要宠物名称/头像/血脉/炫彩/标记的最小子集
+./scripts/gen.sh --profile minimal --gamedata <dir>   # 只要宠物名称/头像/血脉/炫彩/标记的最小子集(rocom-agent)
+./scripts/gen.sh --profile chains --chains <repo>/data/chains.json   # 只要宠物链清单(rocom-pets)
 
 # 3. 抓包分析
 sudo ./scripts/capture.sh                       # 网关上录 pcap → ./pcap/
@@ -56,6 +58,7 @@ go run ./cmd/pcapdump -pcap x.pcap00 -gid 20508  # 宠物编号扫描
 ## 文档
 
 - [数据来源与解析](docs/data.md) — 解包目录结构、Bin 配置/描述符、各 gen_* 的产物与坑
+- [进化链:包与组](docs/petindex.md) — 图鉴号归并规则、边角与全量清单;消费方的进化链口径都出自这里
 - [协议](docs/protocol.md) — GCP 字节布局、密钥、TCP 重组、pcapdump
 - [宠物音频](docs/audio.md) — bnk/wem 与宠物的关联链路
 - [参考资料](docs/reference.md) — CUE4Parse 分支、消费方、同类项目

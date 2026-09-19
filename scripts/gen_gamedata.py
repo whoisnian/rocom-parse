@@ -22,6 +22,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import outdirs
 import pbdesc      # 读 all.pb 描述符(依赖 protobuf,uv 管理)
+import petindex    # 进化链:包归并与分组(与 rocom-pets 的 chains.json 同一份实现)
+from pathlib import Path
 
 # 名称表:解包目录的游戏二进制配置(ScriptC/Data/Bin);opcode/枚举:游戏描述符 all.pb。
 BIN_DIR = os.path.join(outdirs.PARSED, "NRC", "Content", "ScriptC", "Data", "Bin")
@@ -174,58 +176,30 @@ for src in ("MONSTER_CONF.json", "PET_CONF.json"):
         if b is not None and str(b) != cid:
             image_base.setdefault(cid, b)
 
-# petbase: petbase_id -> {n:名称 b:图鉴编号 f:形态名 s:进化阶段 e:进化链分组
+# petbase: petbase_id -> {n:名称 b:图鉴编号 f:形态名 s:进化阶段 e:进化链分组 cb:链首图鉴编号
 #   hl/hh:身高下/上限 wl/wh:体重下/上限(原始整数,与 PetData.height/weight 同单位)}。
 #   宠物当前形态由 PetData.base_conf_id 直接给出(指向当前 petbase),据此取当前名称/头像/图鉴;
 #   conf_id 只指向该线一阶 base,evolved 宠物若用 conf_id 会显示成基础形态。
-#   进化链分组 e 由下方连通分量重建(非直接用 pet_evolution_id),Go 侧按 e 分组、stage 排序还原整条链。
 #   身高/体重范围逐形态不同(base 越进化数值越大),用于列表 tooltip 显示区间与当前值百分位。
-# 进化链分组(重建)。游戏原始的 pet_evolution_id 分组有两个问题:
-#   ① 分支进化只跟单条路径——果冻→抹茶布丁,漏掉同为二阶的椰浆布丁/熔岩布丁;
-#   ② 把共享"身份背景"的 NPC 混进链——珂赛特老师(背景=厉毒修萝)、希露德老师(背景=公平鸽),
-#      以及小游戏变形/剧情/测试/首领(boss)等复制形态,它们与真实图鉴形态同组。
-# 真实图鉴形态判据 _real:有图鉴编号(pictorial_book_id)且 petbase_id 在常规区间(<1e7)。
-#   * 不能用 legal_petbase==1:传说宠整条链(里奥→灵羽勇士→圣羽翼王、小帕尔→…→龙息帕尔等)
-#     legal 均为空,会被整条漏掉。
-#   * 有图鉴号:排除无图鉴的纯 NPC(珂赛特老师/希露德老师/药炉,book=None)。
-#   * <1e7:排除复制形态——它们虽照抄了图鉴号,但 petbase_id 落在 1.3e7~1.9e7 特殊区间
-#     (如"迪莫"16000004、"钨丝贝贝(S2剧情骑乘专用)"19000008、"深渊罗隐"13000169);真实形态
-#     的 petbase_id 都是几千量级。
-# 对 _real 形态按两类无向边求连通分量:evolution_pet_id(该形态可进化成的目标,含全部分支)
-#   + 原 pet_evolution_id(同组互联,兜底季节地区形态)。每个含 ≥2 形态的分量即一条完整进化链
-#   (取分量内最小 petbase_id 作分组号);单形态(含 boss/特殊形态如"霜翼领主")不入链。
-_real = {int(pid) for pid, p in _petbase.items()
-         if p.get("pictorial_book_id") and int(pid) < 10_000_000}
-_adj = {pid: set() for pid in _real}
-for pid, p in _petbase.items():
-    pid = int(pid)
-    if pid not in _real:
-        continue
-    for t in p.get("evolution_pet_id") or []:  # 进化目标(含分支)
-        if int(t) in _real:
-            _adj[pid].add(int(t))
-            _adj[int(t)].add(pid)
-    ev = p.get("pet_evolution_id")             # 原分组(兜底,如季节地区形态)
-    if isinstance(ev, list) and ev:
-        _adj.setdefault(("g", ev[0]), set()).add(pid)  # 用组节点把同组成员连成星形
-        _adj[pid].add(("g", ev[0]))
-_seen, chain_group = set(), {}
-for pid in _real:
-    if pid in _seen:
-        continue
-    stack, comp = [pid], []
-    while stack:  # DFS 连通分量(组节点只作桥,不计入成员)
-        x = stack.pop()
-        if x in _seen:
-            continue
-        _seen.add(x)
-        if not isinstance(x, tuple):
-            comp.append(x)
-        stack.extend(_adj[x] - _seen)
-    if len(comp) >= 2:
-        g = min(comp)
-        for x in comp:
-            chain_group[x] = g
+# 进化链的两种粒度都出自 scripts/petindex.py(全部消费方同一口径,见 docs/petindex.md):
+#   e  = 进化链分组(连通分量,组内最小 petbase_id;rocom-capture 详情页按它画整条链);
+#   cb = 所在「包」的图鉴号 = 链首图鉴编号(rocom-agent 按它聚合同族)。与 b 相同时省略。
+#   包比组粗(板板壳两种外观:两组一包),二者的链首图鉴号必须一致,不一致就是两边规则岔开了。
+chain_group = petindex.evolution_groups(_petbase)
+_packs = petindex.build(Path(outdirs.PARSED))
+chain_book, _alias_book = petindex.chain_books(_packs)
+_group_book = {}
+for pid, g in chain_group.items():
+    b = _petbase[str(pid)].get("pictorial_book_id") or 0
+    if b and (g not in _group_book or b < _group_book[g]):
+        _group_book[g] = b
+for pid, g in chain_group.items():
+    if pid in chain_book and chain_book[pid] != _group_book.get(g):
+        print(f"!! petbase {pid} 的包图鉴号 {chain_book[pid]} ≠ 组 {g} 的链首图鉴号 {_group_book.get(g)}"
+              "(petindex 的包与组岔开了)")
+    chain_book.setdefault(pid, _group_book.get(g, 0))
+for pid, b in _alias_book.items():
+    chain_book.setdefault(pid, b)
 
 petbase = {}
 for pid, p in _petbase.items():
@@ -241,6 +215,9 @@ for pid, p in _petbase.items():
         e["s"] = p["stage"]
     if int(pid) in chain_group:
         e["e"] = chain_group[int(pid)]
+    cb = chain_book.get(int(pid), 0)
+    if cb and cb != e.get("b"):
+        e["cb"] = cb
     eg = p.get("egg_group")
     if eg:  # 蛋组编号列表(1~2 个),对应 egg_group 表的 id
         e["eg"] = eg

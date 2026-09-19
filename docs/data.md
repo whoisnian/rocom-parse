@@ -221,6 +221,10 @@ PET_CONF，特长直接取 PET_TALENT_CONF，opcode 取自 `all.pb` 的 `ZoneSvr
 > 实际形态以 `PetData.base_conf_id`(当前 petbase)为准:`ToPet` 优先用它取名称/头像/图鉴/形态,
 > 缺失才回退 `conf_id`(进化线一阶 base)——否则已进化宠物会显示成基础形态(详见进化形态一节)。
 
+`petbase` 每行 `{n:名称 b:图鉴号 f:形态名 s:阶段 e:进化链分组 cb:链首图鉴号 eg:蛋组 hl/hh/wl/wh:身高体重区间}`,
+`e` 与 `cb` 出自 `scripts/petindex.py`(见 [petindex.md](petindex.md)):`e` 是按进化关系分的组,
+`cb` 是按图鉴号归并的包的图鉴号(与 `b` 相同时省略,消费方取 `cb or b`)。
+
 **异色(shiny)变体**:部分宠物有专属异色美术——头像 `MODEL_CONF.shiny_icon`/`big_shiny_icon`
 (形如 `3010_1`)、全身图 `PETBASE.JL_shiny_res`/`JL_small_shiny_res`(形如 `JL_<拼音>_yise`
 或新命名的 `..._101_Res`)。
