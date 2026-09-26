@@ -324,7 +324,12 @@ webp 转码确定性,默认跳过已存在、`--force` 重编。
   中层原图只有上半 108 像素,顶对齐、高度按原比例(70.13%)给,波谷位置才对得上。
   标记图用 `static` 组的 `img_bolitubian_png` / `img_yisexuancai_png`。
 
-`names.json` 的 `glass` 段是这一切的索引:`{base, wave, hidden{}, colors{}, particles{}}`;
+污染血脉的宠物在图鉴页那一排里也有一张卡,**拼法同普通炫彩**:两色在 `PET_GLOBAL_CONFIG.hb_record_nightmare_color`
+(`#772478;#cd4579`,依次着波浪 / 底),最上压 `hb_record_nightmare_icon` 指向的圆点层 `img_wemeng_png`
+(图鉴图集 `Handbook/Raw/Common/Images` 里的精灵,自带颜色,149×82 与普通卡同比例)。
+
+`names.json` 的 `glass` 段是这一切的索引:`{base, wave, hidden{}, colors{}, particles{}, pollution}`
+(`pollution` 为 `{c1, c2, card}`,表里缺那两行时为 `null`);
 配置里查不到的款(新赛季款)消费方应退回通用炫彩图标、不画卡。
 
 > 对照实机截图逐款验过(暗夜拾光/狂欢怪谈/铅字幻梦/普通/黑白/异色黑白共 6 只,

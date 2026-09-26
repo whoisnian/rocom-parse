@@ -262,11 +262,17 @@ def eggtype_icon_refs():
 
 def glass_icon_refs():
     """炫彩色卡与标记图:两张遮罩 + 各粒子的色卡粒子层(particle_big_icon)
-    + 各隐藏炫彩的整卡(glass_tips_pic)与标记图(icon / 异色版 yise_icon)。"""
+    + 各隐藏炫彩的整卡(glass_tips_pic)与标记图(icon / 异色版 yise_icon)
+    + 污染卡的圆点层(PET_GLOBAL_CONFIG.hb_record_nightmare_icon,图鉴图集里的精灵)。"""
     yield from GLASS_FRAMES
     yield from icon_refs("PARTICLE_RANDOM_CONF", "particle_big_icon")
     for field in ("glass_tips_pic", "icon", "yise_icon"):
         yield from icon_refs("HIDDEN_GLASS_CONF", field)
+    for r in load_rows("PET_GLOBAL_CONFIG").values():
+        if r.get("key") == "hb_record_nightmare_icon":
+            m = re.search(r"/Game/[^']+", str(r.get("str") or ""))
+            if m:
+                yield m.group(0)
 
 
 def gen_group(group: str, refs, writer) -> int:

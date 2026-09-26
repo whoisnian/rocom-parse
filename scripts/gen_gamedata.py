@@ -300,7 +300,17 @@ glass = {
     "particles": {str(int(r["id"])): {
         "n": r.get("name", ""), "card": texkey(r.get("particle_big_icon")),
     } for r in rows("PARTICLE_RANDOM_CONF.json").values() if r.get("id")},
+    "pollution": None,
 }
+
+# 污染卡:图鉴页那一排里给污染血脉的卡,拼法同普通炫彩(底着 c2、波浪着 c1),最上压一层自带颜色的
+# 圆点精灵(149×82,与普通卡同比例)。两色与圆点层是 PET_GLOBAL_CONFIG 的两行,缺一行就不给卡。
+_nm = {r.get("key"): r.get("str") for r in rows("PET_GLOBAL_CONFIG.json").values()
+       if r.get("key") in ("hb_record_nightmare_color", "hb_record_nightmare_icon")}
+_nm_colors = str(_nm.get("hb_record_nightmare_color") or "").split(";")
+if len(_nm_colors) == 2 and texkey(_nm.get("hb_record_nightmare_icon")):
+    glass["pollution"] = {"c1": _nm_colors[0].strip(), "c2": _nm_colors[1].strip(),
+                          "card": texkey(_nm["hb_record_nightmare_icon"])}
 
 # 性格增减维度(权威表，按性格名匹配；维度编号 1生命 2物攻 3魔攻 4物防 5魔防 6速度)。
 # NATURE_CONF 推导对个别性格(如平和)的 id 错位，故以名为准。
