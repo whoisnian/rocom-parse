@@ -227,21 +227,21 @@ for pid, p in _petbase.items():
             e[dst] = p[src]
     petbase[pid] = e
 
-# ---- 野生宠物 NPC(实时地图的野生宠物图层,见 docs/map.md 5)----
+# ---- 野生宠物 NPC(实时地图的野生宠物图层,见 rocom-capture docs/map.md 5)----
 # 大世界里的野生宠物是 NPC 实体:NPC_CONF 行经 traverse_data_param 外键指向 PETBASE_CONF
 # (10782→3758 珀尔鼬),据此拿到形态名与头像。只收**可丢球捕捉**的行
 # (throwing_interact_type 1=普通野生 / 4=首领;其余映射到 petbase 的行是剧情/家园装饰 NPC,
 # 不会作为野生宠刷出),1483 行约 19KB。
-# 注:实体是不是野生宠**不靠这张表判**(靠实体自带 height/weight,见 scene.NpcActor.IsWildPet),
+# 注:实体是不是野生宠**不靠这张表判**(靠实体自带 height/weight,见 rocom-capture 的 scene.NpcActor.IsWildPet),
 # 表只用于显示名称/头像;表里没有的行照样显示,只是没名字。
 npc_pets = {k: v["traverse_data_param"][0] for k, v in rows("NPC_CONF.json").items()
             if v.get("throwing_interact_type") in (1, 4)
             and v.get("traverse_data_param") and str(v["traverse_data_param"][0]) in _petbase}
 
 # 其中的**首领**(throwing_interact_type=4:祭礼巨像/女王蜂/钻石蜗/风暴战犬…)另出一张表。
-# 它们的 AOI 下发距离比普通野生宠远得多(实测 128-176m,普通的是 80m,见 docs/map.md 6),
+# 它们的 AOI 下发距离比普通野生宠远得多(实测 128-176m,普通的是 80m,见 rocom-capture docs/map.md 6),
 # 涂地若把「玩家↔首领」也算成扫过,会把中间那段其实没下发过普通野生宠的地方一并涂上,
-# 故涂地跳过首领(见 docs/map.md 7);地图标记不受影响。
+# 故涂地跳过首领(见 rocom-capture docs/map.md 7);地图标记不受影响。
 npc_bosses = sorted(int(k) for k, v in rows("NPC_CONF.json").items()
                     if v.get("throwing_interact_type") == 4)
 
@@ -396,11 +396,11 @@ for v in rows("WORLD_MAP_BLOCK_CONF.json").values():
 # (LayerMap 单张图)叠加到地表底图上,投影用该层自己的 camera_center + Ortho_width(而非底图的
 # map_center/side_length)——因为层图是局部放大视图。同一坐标系(scene_res_id),坐标不变。
 #
-# 选层机制(见 docs/map.md 2):**服务器的区域进/出事件**(ZONE_SCENE_PLAY_ACTS_NOTIFY 里的
+# 选层机制(见 rocom-capture docs/map.md 2):**服务器的区域进/出事件**(ZONE_SCENE_PLAY_ACTS_NOTIFY 里的
 # enterted_catcher/left_catcher)给出玩家当前所在区域的 area_func_id,命中本表 area_func_id 即在该层
 # (客户端 BigMapModuleData:GetCurMapLayerId 同此)。故本索引给每层带上 `afid`。
-# 早前改用「位置点在 AREA_CONF 多边形内」近似,会在洞穴正上方的地表误命中(多边形只有 x/y,
-# 而区域触发体是 3D 的),已废弃,多边形不再入库。
+# 不用「位置点在 AREA_CONF 多边形内」近似:多边形只有 x/y 而区域触发体是 3D 的,
+# 会在洞穴正上方的地表误命中,故多边形不入库。
 # 只收录有 map_resource(即有切片图)的层;地表条目(无图,用底图)跳过。
 #
 # 层的 scene_res:LAYERED 表有就用(洞穴层=10003);家园层该列为空,只能从其区域行补(=30001)。
@@ -450,7 +450,7 @@ for v in rows("LAYERED_WORLD_MAP_CONF.json").values():
         "afid": int(v.get("area_func_id") or 0),  # 服务器区域进/出事件的 area_func_id,据此选层
     }
 
-# ---- 大地图 POI(实时地图页的图标图层,见 docs/map.md 3)----
+# ---- 大地图 POI(实时地图页的图标图层,见 rocom-capture docs/map.md 3)----
 # WORLD_MAP_CONF 是「地图元素」表:每行一个可在大地图/罗盘显示的元素,带图标(npcicon_* /
 # areaicon_* / npcicon_levelup)与文案(element_text_name),但**没有坐标**。坐标要再走两跳:
 #   WORLD_MAP_CONF.npc_refresh_ids → NPC_REFRESH_CONTENT_CONF.refresh_param
@@ -475,12 +475,12 @@ POI_KINDS = [
 
 # 眠枭之星图层不走 WORLD_MAP 匹配,按 NPC_CONF id 白名单直取刷新行。口径 = 攻略/游戏总数:
 # 一颗星 = 独立星 + 光点(交互后出一颗星)+ 石像(星星魔法命中后浮现一颗星,触碰收集;
-# 本体不消失,判定特殊,见 docs/map.md 4)。
+# 本体不消失,判定特殊,见 rocom-capture docs/map.md 4)。
 # 蓝 147 = 98(96@10003+2@10013 风眠圣所)+28+21;黄 228 = 138+55+35;紫 104 = 60+26+18。
 # A1=蓝、A2=黄、A2-2=紫(WORLD_MAP 30000/30001/30004 的图标为 lan/huang/zi;靠
 # NPC_CONF.min_map_disappear 反查发现这批 NPC——该字段名像「小地图消失距离」,实为
 # WORLD_MAP_CONF.id 外键;石像无此绑定,从 NPC_PENDANT_CONF 的挂件星 npc_id 反推)。
-# 明确**排除**(否则蓝会虚增到 224、黄 194,见 docs/map.md 3):
+# 明确**排除**(否则蓝会虚增到 224、黄 194,见 rocom-capture docs/map.md 3):
 #   - 独立星里**刷新区域是多顶点**的行:石像关联的奖励星预设落点(蓝 94 行:51 单星 + 43 多星,
 #     区域 2/6/12 顶点),实测收集走石像实体的挂件、这些行未见刷出,不是常驻点位。真星点的
 #     刷新区域全部只有 1 个顶点(三色全量验证),该几何判别免维护(紫独立星 60 行无奖励行);
@@ -539,7 +539,7 @@ world_map = {k: w for k, w in world_map.items()
 
 # ---- 区域(zone)与眠枭之星的归属 ----
 # 眠枭之星在**游戏内按区域计数**(商店街周边/月牙湖岸/风眠圣所…),服务器在进场景包里下发
-# 「每区域已收集/总数」(见 docs/map.md 4)。它用的区域键是该区域营地(魔力之源)的刷新点 id:
+# 「每区域已收集/总数」(见 rocom-capture docs/map.md 4)。它用的区域键是该区域营地(魔力之源)的刷新点 id:
 # WORLD_MAP_CONF 里带 zone_name + camp_refresh_id 的行 = 区域行。
 #
 # 区域的**地理范围**走权威外键链(全部为随包发布的产品字段,43 区含新区全覆盖):
@@ -548,7 +548,7 @@ world_map = {k: w for k, w in world_map.items()
 # 相邻管辖区有重叠带,个别星点会同时落入两区且归属无法静态定夺(实测两种决胜规则都会
 # 与服务器分区计数矛盾),故 POI 的 zone 是**候选区域列表**:前端仅当列表非空且全部收满才隐藏
 # ——绝不误藏(服务器归属必在候选之中,已用回放 star_zone 的分区 tot 全量校验:0 矛盾)。
-# 勿再试的歧路见 docs/map.md 4(按区域名匹配 AREA_FUNC 得到的是播报触发体,错 265 点)。
+# 勿再试的歧路见 rocom-capture docs/map.md 4(按区域名匹配 AREA_FUNC 得到的是播报触发体,错 265 点)。
 zone_name = {}   # camp_refresh_id -> 区域名
 for v in world_map_all.values():
     if v.get("zone_name") and v.get("camp_refresh_id"):
@@ -614,7 +614,7 @@ def _poi_pos(refresh_id):
 
 # pois: scene_res_id -> [{k:图层键, x, y, z, n:名称}](世界坐标,厘米,z 为高度;Go 侧用 maps 的
 # 同一投影换算成底图归一化 uv,见 gamedata.Project——投影公式只此一处,z 供收集判定的洞穴层守卫,
-# 见 pipeline/stars.go)。只收有底图的场景:其余(副本/独立洞穴
+# 见 rocom-capture internal/pipeline/stars.go)。只收有底图的场景:其余(副本/独立洞穴
 # 场景)无从投影。洞穴/楼层的点仍属地表 res(如 10003),会照常落在底图上。
 pois = {}
 for kind in POI_KINDS:
@@ -654,7 +654,7 @@ for kind in POI_KINDS:
             continue
         name = owner.get("element_text_name") or owner.get("name") or kind["n"]
         # r=刷新点 id(NPC_REFRESH_CONTENT_CONF.id):服务器下发的 NPC 实体带同一个 id
-        #   (ActorInfo.npc.npc_base.npc_content_cfg_id),据此把实体对回这个点位。见 docs/map.md 4。
+        #   (ActorInfo.npc.npc_base.npc_content_cfg_id),据此把实体对回这个点位。见 rocom-capture docs/map.md 4。
         # zone=候选区域营地 id 列表(仅眠枭之星;语义见上方区域注释)。
         e = {"k": kind["k"], "r": rid, "x": x, "y": y, "z": z, "n": name}
         if kind["k"].startswith("star"):
@@ -662,7 +662,7 @@ for kind in POI_KINDS:
                 e["zone"] = zz
         pois.setdefault(str(res), []).append(e)
 
-# ---- 稀兽花种(实时地图页的花种图层,见 docs/map.md 8)----
+# ---- 稀兽花种(实时地图页的花种图层,见 rocom-capture docs/map.md 8)----
 # 大世界同时开着二十来朵花种,每朵里关着一只混血精灵(打赢可捕捉)。花种**不是固定点位**:
 # 普通花种每天凌晨 4 点、命定花种每两周周五凌晨 4 点在候选点里重投一遍(捕捉也会让它重投),
 # 故点位不能像 POI 那样静态入库——哪些点当前有花只能从流量里的花种列表(0x0375)得知。
@@ -740,7 +740,7 @@ for r in npc_refresh.values():
         continue
     flowers[str(int(r["id"]))] = [int(a["scene_res_id"]), int(pos[0]), int(pos[1])]
 
-# ---- 精灵蛋与家园小窝(精灵蛋页面 + 实时地图家园图层,见 docs/eggs.md)----
+# ---- 精灵蛋与家园小窝(精灵蛋页面 + 实时地图家园图层,见 rocom-capture docs/eggs.md)----
 
 EGG_ITEM_TYPE = 8        # BAG_ITEM_CONF.type:精灵蛋(与 gen_icons.py 同一常量)
 BLOOD_NORMAL = 1         # PET_BLOOD_CONF.blood:普通系血脉——人人都有,不进物种名后缀
@@ -838,7 +838,7 @@ def _size_medals():
     -> [{id, n:奖牌名, d:维度(2=体重 3=嗓音), lo, hi}](蛋卡片上是纯文字标签,不取图标)
     **desc 里写的是「身高」,实际判的是体重**:本机 812 只宠物里戴「小不点」的体重百分位
     全在 [0,2](与配置窗口严丝合缝),而身高百分位到 5;「大块头」两者都 ≥98.1 不区分。
-    蛋的百分位孵化后原样保留(见 docs/eggs.md),故体重那两枚破壳前就能算出来;
+    蛋的百分位孵化后原样保留(见 rocom-capture docs/eggs.md),故体重那两枚破壳前就能算出来;
     嗓音那两枚要等破壳(PetEggBrief 没有 voice 字段)。
 
     MEDAL_TASK_CONF 只发布 id/desc/count,判定字段(get_condition/condition_data1/2)是策划专用、
@@ -908,10 +908,10 @@ data = {
     "layers": layers,
     # 大地图 POI(实时地图页可开关的图标图层):poi_kinds 是图层清单(有序,on=默认开启),
     # pois 是 scene_res_id -> [{k:图层键, r:刷新点id, x, y, z:高度, n:名称, zone:候选区域(仅星星)}]。
-    # 见上与 docs/map.md 3/4。
+    # 见上与 rocom-capture docs/map.md 3/4。
     "poi_kinds": POI_KINDS,
     "pois": pois,
-    # 区域: 营地(魔力之源)刷新点 id -> 区域名。服务器的眠枭之星收集进度按此键下发(3.4)。
+    # 区域: 营地(魔力之源)刷新点 id -> 区域名。服务器的眠枭之星收集进度按此键下发(rocom-capture docs/map.md 4)。
     "zones": {str(k): v for k, v in zone_name.items()},
     "nature": {k: v.get("name", "") for k, v in rows("AUDIO_NATURE_CONF.json").items() if v.get("name")},
     "nature_effect": nature_effect,
@@ -950,10 +950,10 @@ data = {
     # petbase 形态元数据(名称/图鉴号/形态名/阶段/进化链分组),按 base_conf_id 取当前形态。
     "petbase": petbase,
     # 野生宠物 NPC: NPC_CONF.id -> petbase_id(取名称/头像)。实时地图的野生宠物图层用,
-    # 见上与 docs/map.md 5。
+    # 见上与 rocom-capture docs/map.md 5。
     "npc_pets": npc_pets,
     "npc_bosses": npc_bosses,
-    # 稀兽花种(实时地图页的花种图层,见上与 docs/map.md 8):
+    # 稀兽花种(实时地图页的花种图层,见上与 rocom-capture docs/map.md 8):
     #   flower_npcs: 花种 NPC_CONF.id -> {n:类别(稀兽花种/命定花种), icon:图标原名(flower/<原名>.webp)}
     #   flowers:     刷新行 id(花种列表里的 content_cfg_id)-> [scene_res_id, x, y] 候选点世界坐标
     "flower_npcs": flower_npcs,
@@ -961,7 +961,7 @@ data = {
     "flower_levels": flower_levels,
     # 炫彩:隐藏炫彩(名称/归属/整卡)、普通炫彩的配色与粒子,以及色卡两张遮罩(见上)。
     "glass": glass,
-    # 精灵蛋:物种蛋区间/孵化时长、背包蛋物品(显示名/图标/窝上 NPC)、家园小窝家具。见上与 3.6。
+    # 精灵蛋:物种蛋区间/孵化时长、背包蛋物品(显示名/图标/窝上 NPC)、家园小窝家具。见上与 rocom-capture docs/eggs.md。
     "egg_conf": egg_conf,
     "egg_items": egg_items,
     "egg_types": egg_types,

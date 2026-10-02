@@ -46,10 +46,7 @@
 > 兜住 unluac 对个别字节码的死循环,失败/超时打 `.lua.nodecomp` 标记、增量重跑跳过不再白耗;
 > 空模块(源仅注释/空)合法解出空 `.lua`。
 > C# 实现在 `scripts/unpack/`,基于 CUE4Parse 的 `GAME_RocoKingdomWorld` 支持(自定义
-> AES 字节置换变体、Bin/luac 专属处理,无需 usmap)。当前游戏版本 pak(ver12)的解密已随上游
-> PR [#430](https://github.com/FabianFG/CUE4Parse/pull/430)(LukeFZ `nrc`)进主线,多块压缩加密条目
-> (`all.pb`、`proto.non`、UI 图集等)的解压也已随 [#434](https://github.com/FabianFG/CUE4Parse/pull/434)
-> 修好,但**主线仍解不全**:旧版 ver11 pak 的大条目块数被截。
+> AES 字节置换变体、Bin/luac 专属处理,无需 usmap)。上游**主线仍解不全**:旧版 ver11 pak 的大条目块数被截。
 > 要用自己 fork 的 `whoisnian/CUE4Parse` **`rocom` 分支** = 上游 master + 自有修复(见 docs/reference.md;
 > 默认位置 `~/Git/CUE4Parse`,`CUE4PARSE_DIR` 覆盖;unpack.sh 会检查)。修复合入上游主线后换回主线即可。
 > 依赖 dotnet-sdk 10+;首次运行自动下载 oodle/zlib-ng 到
@@ -85,7 +82,7 @@ Bin 目录下:
 `scripts/bin2json.py` 按 CUE4Parse 的 `FRocoBinData` 算法(自行实现,是全仓 `.bytes` 解码的
 唯一实现)把全树 RocoBinData `.bytes` 解为紧邻的 `.json`:压缩/定长表 `{"RocoDataRows":{id:{...}}}`、
 本地化 `{"LocalizationStrings":{...}}`(magic `0x53DF17BE` 识别,非此格式如 BigMap 的 `.bytes` 跳过)。
-`gen_gamedata.py`/`gen_icons.py` 直接读 `BinDataCompressed/<表>.json`,不再自行解 `.bytes`。
+`gen_gamedata.py`/`gen_icons.py` 直接读 `BinDataCompressed/<表>.json`,不自行解 `.bytes`。
 
 > **`BinDataCompressed_ROW/`(国际服覆盖包)**:客户端 `DataConfigManagerNew:InitTableInfo` 按
 > `RocoEnv.IS_INTERNATIONAL_ROW` 决定串表语言(国服固定 `dev_CN`,国际服跟设备语言),这批同名表
@@ -119,7 +116,7 @@ opcode/枚举不在 Bin 里,取自 `all.pb`(见第 2、3 节)。unpack.sh 导出
 - `WORLD_MAP_CONF` + `NPC_REFRESH_CONTENT_CONF` + `AREA_CONF` + `SCENE_OBJECT_CONF`
   — 大地图 POI(炼金釜/魔力之源/…)的图标与坐标(见 rocom-capture docs/map.md 3)。这几张是 Bin 里最大的
   (AREA_CONF 9.1M、NPC_REFRESH 2.3M),但坐标只能从它们来
-  (`NPC_CONF` 2.0M 现已不被生成脚本读取,留作星星 NPC id/`min_map_disappear` 外键的查证依据)
+  (`NPC_CONF` 2.0M 生成脚本不读,留作星星 NPC id/`min_map_disappear` 外键的查证依据)
 - `NPC_PENDANT_CONF` — NPC 挂件(带星石像的判据与挂件星 npc,见 rocom-capture docs/map.md 3/4;行 id = 石像刷新行 id
   = pcap 里的 `pendant_cfg_id`)
 - `WORLD_EXPLORING_STATISTIC_CONF` — 探索统计注册表:「眠枭之星」行的 npc 清单即服务器

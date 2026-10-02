@@ -159,7 +159,7 @@ def chain_books(packs: list["Pack"]) -> tuple[dict[int, int], dict[int, int]]:
 def lords_by_chain(petbase: dict) -> dict[int, list[tuple[int, str]]]:
     """进化链 id → 挂在它上面的王者形态 `[(petbase_id, 名字), …]`,按 id 排。
 
-    **1.111(S4)那版把 `PET_EVOLUTION_CONF.lordevo_chain` 整个删了**,改成王者形态那行
+    **`PET_EVOLUTION_CONF` 不列王者形态**:王者形态那行
     自己写一个 `pet_evolution_id` 指回链;不认这条的话,叶冕魔力猫/钻石蜗/彩虹独角兽
     那 64 个形态会整批从清单里消失(它们有图鉴号,又进不了 `adopt_unbooked`)。
 
@@ -167,7 +167,7 @@ def lords_by_chain(petbase: dict) -> dict[int, list[tuple[int, str]]]:
     另外 3 行(徽章 BOSS 与领地试炼用)是同一份模型的重复登记,靠资产判重挡掉。
     同一条链可以有两个(喵喵:叶冕魔力猫 5003 与武斗酷猫 5061),id 序正是游戏内的先后。
 
-    新版另有一套 6xxx 的「首领形态」(卡图斯（初级/中级/高级）那 34 行),**不是王者形态**:
+    另有一套 6xxx 的「首领形态」(卡图斯（初级/中级/高级）那 34 行),**不是王者形态**:
     三行一只、共用同一份 `…Bo_001` 模型,只是首领等级不同,名字里那个后缀也跟着变。
     它们没有图鉴号也没有 `pet_evolution_id`,与王者形态撞的是同一份资产 —— 王者形态先占,
     它们就自然落空,清单里因此仍是「钻石蜗」而不是「戴蒙德（初级）」。
@@ -215,7 +215,7 @@ def asset_stem(asset: str) -> str:
 
     资产名的构成是「元素_物种拼音 + 阶段 + 可选 Ar + _变体号」,阶段那位是 `Bo` 就是王者形态。
     没图鉴号的那批在 `evolution_pet_id` 里**一条边都没有**,靠这个词干才能把链重新拼起来
-    (design.md §2 早就把「资源目录名数字后缀 = 阶段」列为交叉校验,这里是拿它当主依据)。
+    (「资源目录名数字后缀 = 阶段」,这里拿它当主依据)。
     """
     m = ASSET_RE.match(asset)
     return m.group(1) if m else asset
@@ -430,7 +430,7 @@ def build(parsed: Path) -> list[Pack]:
             if form is None:
                 # 王者形态不套资产阶段位:它们的资产名写的是 `…Bo_001`(没有数字),
                 # 认不出就会退回配置里的 stage,而同一条链的几个王者 stage 全一样 ——
-                # 那时候该保持 `lordevo_chain` 里的先后(叶冕魔力猫在武斗酷猫前面)
+                # 那时候保持 lords_by_chain 给的 id 先后(叶冕魔力猫在武斗酷猫前面)
                 form = pack.forms[pet_name] = Form(
                     pet_name, stage if lord else (asset_stage(asset) or stage), lord
                 )
@@ -630,7 +630,7 @@ def as_tsv(packs: list[Pack]) -> str:
     return "\n".join(out)
 
 
-# 六条样例当回归基线(rocom-pets 早期人工核对过的)
+# 六条样例当回归基线(rocom-pets 人工核对过的)
 EXPECTED = {
     2: ("002-喵喵", "喵喵/喵呜/魔力猫/叶冕魔力猫/武斗酷猫", 5),
     39: ("039-矿晶虫", "矿晶虫/晶石蜗x6/钻石蜗", 8),

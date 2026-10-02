@@ -39,7 +39,7 @@ export FORCE TIMEOUT
 work() {
     local f="$1" out="${1%.luac}.lua" bad="${1%.luac}.lua.nodecomp"
     # 增量跳过:已成功(.lua 更新)或已知搞不定(.nodecomp 标记更新)。--force 忽略两者。
-    # 标记让 unluac 死循环/报错的极少数文件不在每次增量重跑时白耗(尤以 45s 超时者)。
+    # 标记让 unluac 死循环/报错的极少数文件不在每次增量重跑时白耗(尤其是超时的)。
     if [[ $FORCE -eq 0 && -f "$out" && "$out" -nt "$f" ]]; then echo skip; return; fi
     if [[ $FORCE -eq 0 && -f "$bad" && "$bad" -nt "$f" ]]; then echo skip; return; fi
     local tmp rc

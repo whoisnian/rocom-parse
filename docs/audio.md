@@ -204,10 +204,9 @@ _G.NRCAudioManager:SetEmitterRTPC("Pet_Vo_Pitch", voice, ownerView)
 
 `Init.bnk` 的 STMG 段登记了这个 Game Parameter(FNV-1 = `0xC339B8F5`,默认值 0)。
 
-### 同一个参数挂在三处(2026-09-17 更正)
+### 同一个参数挂在三处
 
-本节原来只认容器上的那条曲线,把 FX 对象上的命中当成「复刻不了的插件私有参数」排除了。
-实机听感是**只变调、时长不变**,回头用 CUE4Parse 的 Wwise 解析器(`WwiseReader`,自带
+实机听感是**只变调、时长不变**,单靠容器上的重采样曲线(变调带变速)解释不了。用 CUE4Parse 的 Wwise 解析器(`WwiseReader`,自带
 `EAkPluginId` 插件 id 表与各效果器的参数布局)把 638 个 `Pet_Vo_*.bnk` 整个解开,
 `Pet_Vo_Pitch` 在一只的链路上**挂了三条曲线**,信号按序过:
 

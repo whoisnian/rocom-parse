@@ -1,7 +1,7 @@
 """把解包目录下所有 RocoBinData 二进制配置(.bytes)解码为 JSON,紧邻源文件落盘。
 
 自解包更新后跑一次(scripts/unpack.sh 导出后会自动调),产出既供 grep/jq 查数据,
-也是 gen_gamedata/gen_icons 的输入(它们直接读这些 JSON,不再自行解 .bytes)。
+也是 gen_gamedata/gen_icons 的输入(它们直接读这些 JSON,不自行解 .bytes)。
 按 CUE4Parse 的 `FRocoBinData.cs`(GameTypes/RocoKingdomWorld/Assets/Objects)算法
 独立实现,是全仓 .bytes 解码的唯一实现。
 

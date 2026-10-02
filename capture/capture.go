@@ -69,7 +69,7 @@ func (s *session) cacheState() (bool, bool) {
 func (s *session) markConfirmed() { s.mu.Lock(); s.confirmed = true; s.mu.Unlock() }
 
 // KeyStore 持久化连接会话密钥,供抓包服务重启后继续解密仍存活的连接。
-// 由 store.Store 实现;Engine.Keys 为 nil 时退化为纯内存(重启即丢密钥)。
+// 由消费方实现(rocom-capture 的 store.Store);Engine.Keys 为 nil 时退化为纯内存(重启即丢密钥)。
 type KeyStore interface {
 	LoadKey(connID string) ([]byte, bool) // 连接首次出现时预热;无/过期返回 false
 	SaveKey(connID string, key []byte)    // 收到 ACK 提取到密钥时落盘

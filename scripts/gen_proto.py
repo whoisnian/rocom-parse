@@ -2,8 +2,8 @@
 包 import 路径取 $ROCOM_PB_PKG(消费方指向自己的 internal/pb;见 outdirs.py)。
 
 all.pb 是解包出的 google.protobuf.FileDescriptorSet(游戏运行时 pb.loadufsfile
-加载的同一份),含字段号/类型,直接喂给 protoc 即可生成 Go,无需 .proto 文本、无需 fix_proto。
-com_pet.proto 的依赖闭包由描述符**动态求取**(随 all.pb 版本而变,避免硬编码失配)。
+加载的同一份),含字段号/类型,直接喂给 protoc 即可生成 Go,无需 .proto 文本。
+com_pet/com_pet_team 的依赖闭包由描述符**动态求取**(随 all.pb 版本而变,避免硬编码失配)。
 protoc 解析 rpc_options.proto 需要 well-known 的 descriptor.proto,本脚本在内存里补进描述符集。
 
 运行(需 uv 管理的 protobuf 依赖):  uv run python scripts/gen_proto.py
