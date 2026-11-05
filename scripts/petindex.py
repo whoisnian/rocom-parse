@@ -41,6 +41,7 @@ import os
 import re
 import sys
 from collections import OrderedDict
+from collections.abc import Iterable
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -54,6 +55,8 @@ CN_NUM = "零一二三四五六七八九十"
 FILLED: list[str] = []
 # 靠资产词干认回原包的形态(见 adopt_unbooked);同样要报,那是推断出来的,不是数据直说的
 ADOPTED: list[str] = []
+# 抄来的占位图鉴号被清掉的形态(见 clear_placeholder_books)
+PLACEHOLDER: list[int] = []
 
 
 def cn_count(n: int) -> str:
@@ -77,7 +80,7 @@ def rows(parsed: Path, table: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))["RocoDataRows"]
 
 
-def evolution_groups(petbase: dict) -> dict[int, int]:
+def evolution_groups(petbase: dict, placeholder: Iterable[int] = ()) -> dict[int, int]:
     """petbase_id → 进化链分组号(组内最小 petbase_id),即 names.json 里 petbase 的 `e`。
 
     游戏原始的 pet_evolution_id 分组有两个问题:
@@ -94,12 +97,15 @@ def evolution_groups(petbase: dict) -> dict[int, int]:
     对 `_real` 形态按两类无向边求连通分量:evolution_pet_id(该形态可进化成的目标,含全部分支)
       + 原 pet_evolution_id(同组互联,兜底季节地区形态、「被污染的 X」与伊里斯那种第二个一阶)。
     每个含 ≥2 形态的分量即一条完整进化链;单形态(含 boss/特殊形态如"霜翼领主")不入组。
+    `placeholder` 是被 `clear_placeholder_books` 清掉图鉴号的形态:号是抄来的,形态本身是真的,
+    照样算 `_real`(鹭灯 / 光怪鹭 / 王者失光迷鹭 仍是一组),否则那 42 个形态整批没有 `e`。
 
     **比 `build` 的包细**:板板壳的两种外观各一条链、各一个组,包却只有一个(按图鉴号并)。
     包与组的链首图鉴号必须一致,gen_gamedata 生成时核对。
     """
     real = {int(pid) for pid, p in petbase.items()
             if p.get("pictorial_book_id") and int(pid) < 10_000_000}
+    real |= {pid for pid in placeholder if str(pid) in petbase}
     adj: dict = {pid: set() for pid in real}
     for pid, p in petbase.items():
         pid = int(pid)
@@ -132,6 +138,45 @@ def evolution_groups(petbase: dict) -> dict[int, int]:
             for x in comp:
                 groups[x] = g
     return groups
+
+
+def model_asset(petbase: dict, model_conf: dict, pid: int) -> str:
+    """这个形态用哪份模型资产(`MODEL_CONF.path` 里 `/Pets/` 后面那一段)。**认不出就返回空串** ——
+    没有 `/Pets/…` 的只有四行(幸运惊喜盒 ×3、随机精灵),是界面上的占位条目,不是宠物。"""
+    model = (petbase.get(str(pid)) or {}).get("model_conf")
+    path = (model_conf.get(str(model)) or {}).get("path") or ""
+    _, _, rest = path.partition("/Pets/")
+    return rest.split("/", 1)[0] if rest else ""
+
+
+def clear_placeholder_books(petbase: dict, evolution: dict, model_conf: dict) -> list[int]:
+    """把**抄来的占位图鉴号**清掉(原地改 `petbase`),返回清掉的 petbase_id。
+
+    还没实装的新宠物会整批抄一个现成的图鉴号:1.112 里 3825~3869 那四十多只(鹭灯、钨丝猴、
+    绿草精灵的新外观……)全写着布灵 / 布灵布灵的 464 / 465。按图鉴号归并的话它们会挤进 464-布灵,
+    链首写着 465 的(涟漪白发路路)还会另开一个包,把记忆石的第二种外观也拐走。
+
+    判据:同一个图鉴号下、进化链上的形态里,**petbase_id 最小的那个是号的主人**;
+    资产词干和主人不同的就是抄来的。同一只宠物的几条外观链(海盔虫那种)词干相同,不受影响;
+    王者形态不在进化链上,也不看。词干按小写比:老资产名有大小写不一的(`Wat_Kaka1Ar` / `Wat_KaKa1`)。
+    """
+    members = {
+        m["petbase_id"] for chain in evolution.values() for m in (chain.get("evolution_chain") or [])
+    }
+    by_book: dict[int, list[int]] = {}
+    for key, row in petbase.items():
+        book = row.get("pictorial_book_id")
+        if book and key.isdigit() and int(key) in members:
+            by_book.setdefault(book, []).append(int(key))
+    stem = lambda pid: asset_stem(model_asset(petbase, model_conf, pid)).lower()  # noqa: E731
+    cleared = []
+    for pids in by_book.values():
+        owner = stem(min(pids))
+        for pid in pids:
+            if stem(pid) != owner:
+                petbase[str(pid)] = {**petbase[str(pid)], "pictorial_book_id": None}
+                cleared.append(pid)
+    return sorted(cleared)
 
 
 def chain_books(packs: list["Pack"]) -> tuple[dict[int, int], dict[int, int]]:
@@ -342,21 +387,14 @@ def build(parsed: Path) -> list[Pack]:
     evolution = rows(parsed, "PET_EVOLUTION_CONF")
     model_conf = rows(parsed, "MODEL_CONF")
     labels = skin_labels(rows(parsed, "MEGAMAP_CONF"))
+    PLACEHOLDER.extend(clear_placeholder_books(petbase, evolution, model_conf))
     lords = lords_by_chain(petbase)
 
     def base(pid: int) -> dict:
         return petbase.get(str(pid)) or {}
 
     def asset_of(pid: int) -> str:
-        """这个形态用哪份模型资产。**认不出就返回空串** —— 那种行不该进清单。
-
-        `MODEL_CONF.path` 里没有 `/Pets/…` 的只有四行(幸运惊喜盒 ×3、随机精灵),
-        是界面上的占位条目,不是宠物;没有资产目录也就无从导出。
-        """
-        model = base(pid).get("model_conf")
-        path = (model_conf.get(str(model)) or {}).get("path") or ""
-        _, _, rest = path.partition("/Pets/")
-        return rest.split("/", 1)[0] if rest else ""
+        return model_asset(petbase, model_conf, pid)
 
     packs: dict[tuple[int, str], Pack] = {}
     # 有图鉴号的先来:它们说了算。**没图鉴号的那批里有一堆借着别人的模型占位** ——
@@ -383,6 +421,17 @@ def build(parsed: Path) -> list[Pack]:
         )
         is not None
     }
+    # 有图鉴号的包按资产词干(小写)认:**被清掉占位图鉴号的链**词干对得上,就是那只宠物的
+    # 另一种外观(绿草精灵、缇塔、记忆石的新外观),并进原包,不另开 `000`。
+    # 本来就没图鉴号的链不动(000-古钟蛇 那种老包照旧,包目录名是消费方的键)
+    placeholder = set(PLACEHOLDER)
+    booked_stems: dict[str, int] = {}
+    for _, chain in ordered_chains:
+        head = (chain.get("evolution_chain") or [{}])[0].get("petbase_id", 0)
+        book = base(head).get("pictorial_book_id")
+        if book is not None:
+            for m in chain["evolution_chain"]:
+                booked_stems.setdefault(asset_stem(asset_of(m["petbase_id"])).lower(), book)
     for key, chain in ordered_chains:
         members = chain.get("evolution_chain") or []
         # 链名自己写着「废弃」的不要(两条:野外首领梦想三三/雪影娃娃)。
@@ -401,10 +450,16 @@ def build(parsed: Path) -> list[Pack]:
         # `Com_YaJiJi1_001`,按词干会并成一个二十几形态的怪包;那时退回按链首 id 各归各的
         root_asset = asset_of(root["petbase_id"])
         key2 = ""
+        home = None
         if book is None:
             own = root_asset and root_asset not in booked_assets
             key2 = asset_stem(root_asset) if own else f"pet{root['petbase_id']}"
-        pack = packs.setdefault((book or 0, key2), Pack(book or 0, root["pet_name"]))
+            adoptable = own and root["petbase_id"] in placeholder
+            booked = booked_stems.get(asset_stem(root_asset).lower()) if adoptable else None
+            home = packs.get((booked, "")) if booked is not None else None
+            if home is not None:
+                ADOPTED.append(f"{home.file_name} ← {root['pet_name']}({root_asset},整条链)")
+        pack = home or packs.setdefault((book or 0, key2), Pack(book or 0, root["pet_name"]))
         pack.chains.append(key)
         # 链名自己就带着外观:「矿晶虫进化链(西瓜碧玺的样子)」。**当 MEGAMAP 的补漏**——
         # 那张表只登记了「特殊的那一版」,基础版往往没有条目(脆筒甜甜的樱桃巧克力口味
@@ -678,7 +733,7 @@ def main() -> int:
         return 1 if check(packs) else 0
 
     if args.format == "json":
-        print(as_json(packs, rows(args.parsed, "PETBASE_CONF")))
+        print(as_json(packs, build.petbase))
         return 0
     print(as_text(packs) if args.format == "text" else as_tsv(packs))
     print(
@@ -692,6 +747,9 @@ def main() -> int:
             + "、".join(FILLED),
             file=sys.stderr,
         )
+    if PLACEHOLDER:
+        print(f"# 有 {len(PLACEHOLDER)} 个形态的图鉴号是抄来的占位,按没图鉴号处理:"
+              + "、".join(map(str, PLACEHOLDER)), file=sys.stderr)
     if ADOPTED:
         print(
             f"# 有 {len(ADOPTED)} 个没图鉴号的形态**按资产词干认回了原包**(推断,不是数据直说的):"

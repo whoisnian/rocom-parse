@@ -185,19 +185,27 @@ for src in ("MONSTER_CONF.json", "PET_CONF.json"):
 #   e  = 进化链分组(连通分量,组内最小 petbase_id;rocom-capture 详情页按它画整条链);
 #   cb = 所在「包」的图鉴号 = 链首图鉴编号(rocom-agent 按它聚合同族)。与 b 相同时省略。
 #   包比组粗(板板壳两种外观:两组一包),二者的链首图鉴号必须一致,不一致就是两边规则岔开了。
-chain_group = petindex.evolution_groups(_petbase)
+# 抄来的占位图鉴号(未实装的新宠整批写着布灵的 464/465)先清掉,与 petindex.build 同一口径:
+# 不然它们的 b 写成 464,cb 也跟着并进 464-布灵。分组 e 照旧把它们当真实形态(鹭灯那条链仍是一组)
+_placeholder = petindex.clear_placeholder_books(_petbase, rows("PET_EVOLUTION_CONF.json"), _model)
+chain_group = petindex.evolution_groups(_petbase, _placeholder)
 _packs = petindex.build(Path(outdirs.PARSED))
 chain_book, _alias_book = petindex.chain_books(_packs)
+# petindex 列进 000 包的形态:包说了没图鉴号,就不再拿组里别的形态的号兜底
+# (鹭灯一组只剩王者失光迷鹭抄来的 238,兜底会把整组的 cb 写成 238)
+_in_pack = {pid for p in _packs for f in p.forms.values() for ids in f.ids.values() for pid in ids}
 _group_book = {}
 for pid, g in chain_group.items():
     b = _petbase[str(pid)].get("pictorial_book_id") or 0
     if b and (g not in _group_book or b < _group_book[g]):
         _group_book[g] = b
 for pid, g in chain_group.items():
-    if pid in chain_book and chain_book[pid] != _group_book.get(g):
-        print(f"!! petbase {pid} 的包图鉴号 {chain_book[pid]} ≠ 组 {g} 的链首图鉴号 {_group_book.get(g)}"
+    # 组里一个图鉴号都没有(整组都是清掉号的,如认回 093 的绿草精灵新外观)就无从核对
+    if pid in chain_book and g in _group_book and chain_book[pid] != _group_book[g]:
+        print(f"!! petbase {pid} 的包图鉴号 {chain_book[pid]} ≠ 组 {g} 的链首图鉴号 {_group_book[g]}"
               "(petindex 的包与组岔开了)")
-    chain_book.setdefault(pid, _group_book.get(g, 0))
+    if pid not in _in_pack:
+        chain_book.setdefault(pid, _group_book.get(g, 0))
 for pid, b in _alias_book.items():
     chain_book.setdefault(pid, b)
 
