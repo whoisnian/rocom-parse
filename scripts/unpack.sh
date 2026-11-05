@@ -43,10 +43,12 @@ CUE4PARSE_DIR="${CUE4PARSE_DIR:-$HOME/Git/CUE4Parse}"
     echo "  克隆一份,或设环境变量 CUE4PARSE_DIR 指向已有克隆" >&2
     exit 1
 }
-# ver11 策略位的修复只在 whoisnian/CUE4Parse 的 rocom 分支(= 上游 master + 自有修复,见 docs/reference.md);
-# 缺了它,旧版 ver11 pak 中 ≥1024 块的大条目损坏。这里认一个只有该分支才有的标识符。
+# pak 条目加密策略的修复只在 whoisnian/CUE4Parse 的 rocom 分支(= 上游 master + 自有修复,见 docs/reference.md);
+# 缺了它,旧版 ver11 pak 中 ≥1024 块的大条目损坏、ver12 中 ≥1024 块的非编码条目解压失败。
+# 这里认两个只有该分支才有的标识:FPakInfo.HasEncryptionStrategy 与 FPakEntry 从 Flags 高 6 位取策略。
 # 修复合入上游主线后可去掉本段。
-grep -q HasEncryptionStrategy "$CUE4PARSE_DIR/CUE4Parse/UE4/Pak/Objects/FPakInfo.cs" 2>/dev/null || {
+grep -q HasEncryptionStrategy "$CUE4PARSE_DIR/CUE4Parse/UE4/Pak/Objects/FPakInfo.cs" 2>/dev/null &&
+    grep -qF 'CustomData = (int) (Flags >> 2)' "$CUE4PARSE_DIR/CUE4Parse/UE4/Pak/Objects/FPakEntry.cs" 2>/dev/null || {
     echo "错误: $CUE4PARSE_DIR 缺少 rocom 分支的 pak 修复,需要 whoisnian/CUE4Parse 的 rocom 分支" >&2
     exit 1
 }

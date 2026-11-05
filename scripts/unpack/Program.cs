@@ -111,6 +111,8 @@ if (aesHex.Length != 64 || !aesHex.All(Uri.IsHexDigit))
 Log.Logger = new LoggerConfiguration().MinimumLevel.Is(LogEventLevel.Warning).WriteTo.Console().CreateLogger();
 // Detex/oodle 原生库是 Windows dll;托管解码器(AssetRipper)全平台可用,PC 端 BC/DXT 与安卓 ASTC 都覆盖
 TextureDecoder.UseAssetRipperTextureDecoder = true;
+// 纹理解码/编码参数:DesktopMobile 平台、首个可用 mip、PNG(压缩级 3)、HDR 也转 PNG
+var textureOptions = new ExportOptions(textureFormat: ETextureFormat.Png, exportHdrTexturesAsHdr: false);
 
 // oodle/zlib-ng 原生解压库:缺则自动下载到 ~/.cache/nrc-unpack(pak 未用到时失败也不致命)
 var cacheDir = Path.Combine(home, ".cache", "nrc-unpack");
@@ -202,10 +204,10 @@ Parallel.ForEach(jobs, new ParallelOptions { MaxDegreeOfParallelism = parallelis
                     // 纹理解码失败(RenderTarget/视频纹理等无像素数据)只记录,属性 json 照写
                     try
                     {
-                        var decoded = tex.Decode() ?? throw new InvalidOperationException($"纹理解码失败({tex.Format})");
+                        var decoded = tex.Decode(textureOptions) ?? throw new InvalidOperationException($"纹理解码失败({tex.Format})");
                         // 单纹理包(常态)用包名;罕见多纹理包时后续项以导出名附加,避免互相覆盖
                         var path = Path.ChangeExtension(job.OutPath, n == 0 ? ".png" : $"{tex.Name}.png");
-                        File.WriteAllBytes(path, decoded.Encode(ETextureFormat.Png, false, out _));
+                        File.WriteAllBytes(path, decoded.Encode(textureOptions, out _));
                         Interlocked.Increment(ref pngCount);
                     }
                     catch (Exception e)
