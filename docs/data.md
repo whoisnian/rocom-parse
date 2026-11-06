@@ -59,7 +59,7 @@
 > 实则新版本一个文件都没导出。
 
 > **发布数据里没有策划专用字段**(editor_name、max_num、npc_pendant_id、`WORLD_MAP_BLOCK_CONF.is_world_map`、
-> `MEDAL_TASK_CONF` 的判定字段等),解析只可依赖仍随包发布的字段与表:石像奖励行按刷新区域顶点数排除、
+> `MEDAL_TASK_CONF` 的判定字段、`PET_INFO_CONF.blood_id` 等),解析只可依赖仍随包发布的字段与表:石像奖励行按刷新区域顶点数排除、
 > 带星石像按 NPC_PENDANT_CONF 判定;星点→区域归属走 `CAMP_CONF.area_id` 管辖区外键链;大世界图按
 > 客户端判据 `BigMapUtils.IsHomeScene`(`SCENE_RES_CONF.scene_id != 301`);百分位奖牌按 task id 固定维度、
 > 窗口从 desc 文本读。**游戏更新还会继续剥离或改名字段**,症状都是「脚本零报错、某个维度悄悄变空或变错」
@@ -164,12 +164,12 @@ gen_proto 生成的静态结构体只覆盖宠物相关那几个消息(线上解
 `gen_pbdesc.py` 另出一份**运行时反射用**的生成物到 `$ROCOM_PBDESC_OUT`(默认 `build/pbdesc`,
 `pcapdump` 运行时从该目录加载,`-data` 指定):
 
-- `opmsg.json`:opcode → 消息全名(1696 条)。映射表在客户端 `ProtoCMD.lua`
+- `opmsg.json`:opcode → 消息全名(1788 条)。映射表在客户端 `ProtoCMD.lua`
   (`[ProtoCMD.ZoneSvrCmd.X] = ".Next.Y"`),opcode 数值取 all.pb 的 `ZoneSvrCmd`/`ZoneSvrGmCmd`
-  枚举,两边对得上才收(有 22 个消息名 lua 里有、描述符里还没有,跳过)。
-- `opname.json`:opcode → `ZoneSvrCmd` 枚举名全集(1447 条),pcapdump 概览与 `-op` 名称匹配用。
-- `proto.desc.gz`:裁剪过的 `FileDescriptorSet`(gzip 190KB)。只留从上述消息**字段可达**的
-  消息与枚举(3244/4005 消息、189/1128 枚举),service/自定义 option 扩展全丢;
+  枚举,两边对得上才收(有 24 个消息名 lua 里有、描述符里还没有,跳过)。
+- `opname.json`:opcode → `ZoneSvrCmd` 枚举名全集(1541 条),pcapdump 概览与 `-op` 名称匹配用。
+- `proto.desc.gz`:裁剪过的 `FileDescriptorSet`(gzip 200KB)。只留从上述消息**字段可达**的
+  消息与枚举(3454/4244 消息、201/1188 枚举),service/自定义 option 扩展全丢;
   被引用的嵌套枚举若其外层消息用不上,外层留个空壳撑住命名(否则解析报找不到类型)。
 
 pcapdump 用它 + `dynamicpb` 解出带字段名/枚举名的树(`cmd/pcapdump/typed.go`)。消息在
@@ -211,7 +211,7 @@ PET_CONF，特长直接取 PET_TALENT_CONF，opcode 取自 `all.pb` 的 `ZoneSvr
 > `img_<系别>_<名><代>_<变体>_Res`(如 `img_Ill_QiuQiu1_001_Res`,`001` 普通 / `101` 异色)。
 > 故 `images` **存原样完整文件名**、Go 侧只拼目录与扩展名,不做前缀增删。
 
-`gen_gamedata.py` 输出两张:`images`(petbase_id → `{h,b,p,ps,…}` 文件名,1122 项)与
+`gen_gamedata.py` 输出两张:`images`(petbase_id → `{h,b,p,ps,…}` 文件名,1277 项)与
 `image_base`(conf_id → petbase_id,仅 base≠自身者,约 2 万项;base==自身者 Go 侧回退直查)。
 `gamedata.PetImage(confID, shiny)` 据此拼出相对路径(`HeadIcon/3001.webp` 等),挂到 `Pet.Image`,
 前端拼到 `/img/` 下。未上线宠(如占位的圣草帝魔)无美术资源,`PetImage` 返回空,前端给占位图。

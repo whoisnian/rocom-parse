@@ -146,8 +146,8 @@ RandomSeq 57 / Switch 19 / ActorMixer 4),19 个事件各对应 3 个随机变体
 
 | 字段 | 含义 | 覆盖 |
 | --- | --- | --- |
-| `name` | 中文名 | 1147 条 |
-| `pictorial_book_id` | **图鉴号** | 721 条 |
+| `name` | 中文名 | 1302 条 |
+| `pictorial_book_id` | **图鉴号** | 837 条 |
 
 两点容易踩:
 

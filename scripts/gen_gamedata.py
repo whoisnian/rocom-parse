@@ -751,7 +751,6 @@ for r in npc_refresh.values():
 # ---- 精灵蛋与家园小窝(精灵蛋页面 + 实时地图家园图层,见 rocom-capture docs/eggs.md)----
 
 EGG_ITEM_TYPE = 8        # BAG_ITEM_CONF.type:精灵蛋(与 gen_icons.py 同一常量)
-BLOOD_NORMAL = 1         # PET_BLOOD_CONF.blood:普通系血脉——人人都有,不进物种名后缀
 NEST_INTERACT_TYPE = 3   # FURNITURE_ITEM_CONF.interact_type:可入住宠物的小窝
 
 
@@ -762,14 +761,14 @@ def _egg_tables():
                  身高体重区间(百分位口径,与成体 PETBASE_CONF 区间不是一套数), t:孵化秒数,
                  p:蛋品类 precious_egg_type(0=普通;异色/炫彩等见 egg_types)}
                  PET_EGG_CONF 不发布 name/form/voice_percent/pet_bond_name(策划专用字段),
-                 故 n 由仍发布的字段重建:pet_id → 种类名,再按 PET_INFO_CONF.blood_id 补血脉后缀
-                 (PET_BLOOD_CONF.name,如「迪莫（光系血脉）」)。异色由 p/egg_types 单独表达,不进名字。
+                 故 n 由仍发布的字段重建:pet_id → 种类名。孵出的血脉无从得知:PET_INFO_CONF 不发布
+                 blood_id,背包里蛋的 PetEggBrief 也不带血脉(只有孵化用的 PetEggCore 有),客户端蛋界面
+                 同样不显示血脉。异色由 p/egg_types 单独表达,不进名字。
     - egg_items: BAG_ITEM_CONF 里 type==8 的物品 -> {n:显示名, c:物种 conf_id(随机蛋为 0),
                  img:图标原名(egg/<原名>.webp), npc:窝上蛋 NPC 的 NPC_CONF id,
                  q:物品品质 item_quality, s:排序号 sort_id(两者都是游戏内「品质排序」的键)}
                  显示名按 known_name 模板("{0}的蛋")填物种名;无模板/随机蛋用 name。
-                 模板填的是**不带血脉后缀的**种类名——与客户端一致(HandbookModuleData 用
-                 GetPetConf(petId).name 填 known_name),血脉只留在 egg_conf.n 里当「孵出谁」。
+                 模板填种类名,与客户端一致(HandbookModuleData 用 GetPetConf(petId).name 填 known_name)。
     - egg_types: EGG_TYPE_CONF 的 precious_egg_type -> {n:品类名(异色精灵蛋…), o:display_order
                  (游戏内品质排序的首要键,越小越靠前), img:小图标原名(egg/<原名>.webp)}
     - nest_furniture: {家具 config_id: {n:家具名, academy:true(仅学院小窝)}},即家园里能住宠物的小窝
@@ -780,22 +779,8 @@ def _egg_tables():
                  privilege_para1,同客户端 AcademicPrivilegeModuleData:IsPetAcademyHomePetBed)。
     """
     econf, eitems, etypes, nests = {}, {}, {}, {}
-    # 重建物种名用:conf_id → pet_info_id → blood_id → 血脉全名(「光系血脉」/「首领血脉」)。
-    pet_info = {k: v.get("pet_info_id") for src in ("MONSTER_CONF.json", "PET_CONF.json")
-                for k, v in rows(src).items()}
-    blood_id = {k: v.get("blood_id") for k, v in rows("PET_INFO_CONF.json").items()}
-    blood_full = {k: v["name"] for k, v in rows("PET_BLOOD_CONF.json").items() if v.get("name")}
-
-    def egg_species(conf_id, pet_id):
-        """蛋孵出的物种名:种类名 +(非普通)血脉后缀。见本函数 docstring 里的口径说明。"""
-        name = species.get(str(pet_id), "")
-        b = blood_id.get(str(pet_info.get(conf_id, "")))
-        if b and int(b) != BLOOD_NORMAL and str(b) in blood_full:
-            name += f"（{blood_full[str(b)]}）"
-        return name
-
     for k, v in rows("PET_EGG_CONF.json").items():
-        econf[k] = {"n": egg_species(k, v.get("pet_id", k)),
+        econf[k] = {"n": species.get(str(v.get("pet_id", k)), ""),
                     "hl": v.get("height_low", 0), "hh": v.get("height_high", 0),
                     "wl": v.get("weight_low", 0), "wh": v.get("weight_high", 0), "t": v.get("hatch_data", 0),
                     "p": v.get("precious_egg_type", 0)}
