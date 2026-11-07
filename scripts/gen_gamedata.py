@@ -887,6 +887,23 @@ partner_marks = [
 
 size_medals = _size_medals()
 
+
+# 赛季奇遇战斗(龙棋士等): battle_cfg_id -> {n:战斗名(即对手宠物名), p:敌方宠物 conf_id}。
+# 0x1316 的 init_info.battle_cfg_id 在进战斗时就确定宠物种类,rocom-capture 捕获事件页的战斗信息用。
+def _battle_cfg():
+    out = {}
+    for k, v in rows("BATTLE_CONF.json").items():
+        if v.get("season_play") != 1 or not v.get("name"):
+            continue
+        bl = v.get("npc_battle_list") or []
+        ids = (bl[0] or {}).get("pos1_1st") if bl and isinstance(bl[0], dict) else None
+        if ids:
+            out[k] = {"n": v["name"], "p": int(ids[0])}
+    return out
+
+
+battle_cfg = _battle_cfg()
+
 data = {
     "species": species,
     # 蛋组: id -> {name:社区流行名, desc:官方描述}。petbase[].eg 引用这些 id。
@@ -946,6 +963,9 @@ data = {
     # 见上与 rocom-capture docs/map.md 5。
     "npc_pets": npc_pets,
     "npc_bosses": npc_bosses,
+    # 赛季奇遇战斗: battle_cfg_id -> {n: 战斗名(对手宠物名), p: 敌方宠物 conf_id}。
+    # 0x1316 的 init_info.battle_cfg_id 在进战斗时就能确定宠物种类(战斗信息行用)。
+    "battle_cfg": battle_cfg,
     # 稀兽花种(实时地图页的花种图层,见上与 rocom-capture docs/map.md 8):
     #   flower_npcs: 花种 NPC_CONF.id -> {n:类别(稀兽花种/命定花种), icon:图标原名(flower/<原名>.webp)}
     #   flowers:     刷新行 id(花种列表里的 content_cfg_id)-> [scene_res_id, x, y] 候选点世界坐标

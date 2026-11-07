@@ -193,6 +193,7 @@ pcapdump 用它 + `dynamicpb` 解出带字段名/枚举名的树(`cmd/pcapdump/t
 | 图片索引 | `images` `image_base` `filter_icons` `blood_icons` `medal_icons` `static_icons` | 本文下两节 |
 | 场景与地图 | `scenes` `scene_res` `scene_default_res` `maps` `layers` `zones` `poi_kinds` `pois` `npc_pets` `npc_bosses` | rocom-capture docs/map.md |
 | 精灵蛋 | `egg_conf` `egg_items` `egg_types` `nest_furniture` | rocom-capture docs/eggs.md |
+| 赛季奇遇战斗 | `battle_cfg` | rocom-capture docs/parsing.md 6 |
 | 协议 | `opcodes` | 本文 §2 |
 
 名称表由 `bin2json.py` 解出的 Bin JSON 得到;系别/天分/标记的整数值通过解析 `all.pb`
