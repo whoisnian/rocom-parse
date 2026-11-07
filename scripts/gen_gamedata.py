@@ -767,8 +767,9 @@ def _egg_tables():
     - egg_items: BAG_ITEM_CONF 里 type==8 的物品 -> {n:显示名, c:物种 conf_id(随机蛋为 0),
                  img:图标原名(egg/<原名>.webp), npc:窝上蛋 NPC 的 NPC_CONF id,
                  q:物品品质 item_quality, s:排序号 sort_id(两者都是游戏内「品质排序」的键)}
-                 显示名按 known_name 模板("{0}的蛋")填物种名;无模板/随机蛋用 name。
-                 模板填种类名,与客户端一致(HandbookModuleData 用 GetPetConf(petId).name 填 known_name)。
+                 显示名按 known_name 模板("{0}的蛋")填物种名;随机蛋(conf_id==0)用物品 name
+                 ——客户端只在 conf_id != 0 时才查图鉴填 known_name(HandbookModuleData 用
+                 GetPetConf(petId).name),否则显示 name(见 UMG_PetHatchingItem_C:OnItemUpdate)。
     - egg_types: EGG_TYPE_CONF 的 precious_egg_type -> {n:品类名(异色精灵蛋…), o:display_order
                  (游戏内品质排序的首要键,越小越靠前), img:小图标原名(egg/<原名>.webp)}
     - nest_furniture: {家具 config_id: {n:家具名, academy:true(仅学院小窝)}},即家园里能住宠物的小窝
@@ -794,7 +795,11 @@ def _egg_tables():
                     conf = int(r)
                     break
         name = v.get("known_name") or v.get("name") or ""
-        if "{0}" in name:
+        if conf == 0:
+            # 随机蛋/自选炫彩蛋:客户端只在 conf_id != 0 时才查图鉴用 known_name,
+            # 否则直接显示物品本身的 name(600044 = 紫色炫彩蛋,known_name 是「浅红紫炫彩蛋」)。
+            name = v.get("name") or name
+        elif "{0}" in name:
             name = name.replace("{0}", species.get(str(conf), "未知精灵"))
         e = {"n": name, "c": conf, "img": texkey(v.get("icon", "")),
              "q": v.get("item_quality", 0), "s": v.get("sort_id", 0)}
