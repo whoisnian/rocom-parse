@@ -254,7 +254,7 @@ PET_CONF，特长直接取 PET_TALENT_CONF，opcode 取自 `all.pb` 的 `ZoneSvr
 | `filter` | `PET_FILTER_CONF.filter_icon` | 系别(属性)18 + 六维 6+6(`AttributeType` 增益类/裸值同图,整数 1-6 即六维编号)+ 搭档标记 10 | 34 |
 | `blood` | `PET_BLOOD_CONF.icon` | 24 条血脉主图标(18 属性系 + 6 特殊;异核/黑魔法共用) | 23 |
 | `static` | 脚本内 `STATIC` 清单 | 人工挑选的杂项(异色/炫彩/污染、伙伴标记外框) | 5 |
-| `worldmap` | 脚本内 `WORLDMAP` 清单 | 人工挑选的大地图 POI(炼金釜/魔力之源/守护地、矿石与植物标记、眠枭庇护所、蓝/黄/紫眠枭之星与精灵果实) | 14 |
+| `worldmap` | 脚本内 `WORLDMAP` 清单 | 人工挑选的大地图 POI(炼金釜/魔力之源/守护地、矿石与植物标记、眠枭庇护所、蓝/黄/紫眠枭之星与精灵果实、大龙棋士) | 15 |
 | `medal` | `MEDAL_CONF.icon` | 60 枚奖牌小图(BagItem;部分奖牌共用) | 52 |
 | `glass` | `HIDDEN_GLASS_CONF` / `PARTICLE_RANDOM_CONF` + 脚本内 `GLASS_FRAMES` | 炫彩色卡的两张遮罩、4 种粒子的粒子层、5 款隐藏炫彩的整卡与标记图(含异色版) | 21 |
 

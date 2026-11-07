@@ -57,6 +57,7 @@ STATIC = {
 # 眠枭的两张「之星」资产名把拼音写反了(mianxiao / miaoxian),同一图两色,非笔误勿改。
 WORLDMAP = {
     "Alchemy_png":                          "炼金釜",
+    "img_longqizi_png":                     "大龙棋士(赛季奇遇 NPC)",
     "Interestplace_Campinglan_png":         "魔力之源",
     "Interestplace_Underground_Unlock_png": "守护地",
     "img_MapIcon_Ore_png":                  "矿石标记",
