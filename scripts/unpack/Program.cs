@@ -109,8 +109,7 @@ if (aesHex.Length != 64 || !aesHex.All(Uri.IsHexDigit))
     return Fail($"AES 密钥须为 64 位十六进制,拿到 {aesHex.Length} 位");
 
 Log.Logger = new LoggerConfiguration().MinimumLevel.Is(LogEventLevel.Warning).WriteTo.Console().CreateLogger();
-// Detex/oodle 原生库是 Windows dll;托管解码器(AssetRipper)全平台可用,PC 端 BC/DXT 与安卓 ASTC 都覆盖
-TextureDecoder.UseAssetRipperTextureDecoder = true;
+// 纹理解码全部是 CUE4Parse-Conversion 带的托管实现(BC/ASTC/ETC),无原生 Detex 依赖;PC 端 BC/DXT 与安卓 ASTC 都覆盖
 // 纹理解码/编码参数:DesktopMobile 平台、首个可用 mip、PNG(压缩级 3)、HDR 也转 PNG
 var textureOptions = new ExportOptions(textureFormat: ETextureFormat.Png, exportHdrTexturesAsHdr: false);
 
